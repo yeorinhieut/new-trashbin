@@ -1,0 +1,1544 @@
+<!doctype html>
+<html lang="ko" class="h-full bg-slate-950">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trashbin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              display: ["Pretendard Variable", "Inter", "sans-serif"],
+              body: ["Pretendard Variable", "Inter", "sans-serif"],
+            },
+            colors: {
+              dashboard: {
+                surface: "#0f172a",
+                border: "#1f2a44",
+                accent: "#34d399",
+              },
+            },
+            boxShadow: {
+              glow: "0 20px 45px -25px rgba(15, 118, 110, 0.75)",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="min-h-full bg-slate-950 text-slate-100">
+    <div
+      class="mx-auto flex min-h-screen max-w-7xl flex-col gap-10 px-4 py-8 sm:px-6 lg:px-8"
+    >
+      <header class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <div class="space-y-3">
+          <div class="inline-flex items-center gap-2 text-sm text-dashboard-accent/80">
+            <span class="inline-flex h-2 w-2 animate-pulse rounded-full bg-dashboard-accent"></span>
+            <span class="uppercase tracking-[0.3em] text-xs">Trashbin</span>
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold text-white sm:text-4xl">대시보드</h1>
+          </div>
+        </div>
+        <div class="flex flex-col items-start gap-3 text-xs text-slate-400 sm:items-end">
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              id="edit-config-button"
+              type="button"
+              class="inline-flex items-center justify-center gap-2 rounded-full border border-dashboard-border/70 bg-dashboard-surface/60 px-4 py-1.5 text-xs font-semibold text-slate-200 transition hover:border-dashboard-accent hover:text-dashboard-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+            >
+              글로벌 컨피그 수정
+            </button>
+            <button
+              id="reload-config"
+              type="button"
+              class="inline-flex items-center justify-center gap-2 rounded-full border border-dashboard-border/70 bg-dashboard-surface/60 px-4 py-1.5 text-xs font-semibold text-slate-200 transition hover:border-dashboard-accent hover:text-dashboard-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+            >
+              컨피그 리로드
+            </button>
+            <span id="reload-message" class="text-xs text-slate-400"></span>
+          </div>
+        </div>
+      </header>
+
+      <main class="flex flex-1 flex-col gap-10 pb-16">
+        <section
+          class="rounded-3xl border border-dashboard-border/80 bg-dashboard-surface/70 p-6 shadow-xl shadow-black/40 backdrop-blur"
+        >
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="text-xl font-semibold text-white">갤러리 상태</h2>
+            </div>
+            <button
+              id="open-create-gallery"
+              type="button"
+              class="inline-flex items-center justify-center gap-2 rounded-xl border border-dashboard-border/70 bg-dashboard-surface/80 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:border-dashboard-accent hover:text-dashboard-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+            >
+              갤러리 추가
+            </button>
+          </div>
+          <div class="mt-6 overflow-hidden overflow-x-auto rounded-2xl border border-dashboard-border/80">
+            <table class="min-w-full divide-y divide-dashboard-border/80 text-left text-sm">
+              <thead class="bg-slate-900/60 text-xs uppercase tracking-wide text-slate-400">
+                <tr>
+                  <th scope="col" class="px-4 py-3">갤러리 ID</th>
+                  <th scope="col" class="px-4 py-3">이름</th>
+                  <th scope="col" class="px-4 py-3">상태</th>
+                  <th scope="col" class="px-4 py-3">총 수집글</th>
+                  <th scope="col" class="px-4 py-3">DB 용량</th>
+                  <th scope="col" class="px-4 py-3">대기열</th>
+                  <th scope="col" class="px-4 py-3">최근 활동</th>
+                  <th scope="col" class="px-4 py-3">오류</th>
+                  <th scope="col" class="px-4 py-3 text-right">제어</th>
+                </tr>
+              </thead>
+              <tbody id="status-body" class="divide-y divide-dashboard-border/80 bg-slate-950/40"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section
+          id="queue-overview"
+          class="rounded-3xl border border-dashboard-border/80 bg-dashboard-surface/70 p-6 shadow-xl shadow-black/40 backdrop-blur"
+        >
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="text-xl font-semibold text-white">큐 현황</h2>
+              <p class="text-sm text-slate-400">전체 갤러리의 수집 및 예약 작업 상황입니다.</p>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-slate-400">
+              <span>업데이트</span>
+              <span id="queue-updated-at" class="font-semibold text-slate-200">-</span>
+            </div>
+          </div>
+          <div class="mt-6 grid gap-6 lg:grid-cols-2">
+            <div class="rounded-2xl border border-dashboard-border/70 bg-slate-950/60 p-5">
+              <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-white">수집 큐</h3>
+                <span id="queue-collecting-count" class="text-sm text-slate-400">-</span>
+              </div>
+              <ul
+                id="queue-collecting-list"
+                class="mt-4 space-y-3 text-sm text-slate-200"
+              ></ul>
+              <div
+                id="queue-collecting-empty"
+                class="mt-4 rounded-xl bg-slate-900/50 p-4 text-sm text-slate-400"
+              >
+                대기 중인 작업이 없습니다.
+              </div>
+            </div>
+            <div class="rounded-2xl border border-dashboard-border/70 bg-slate-950/60 p-5">
+              <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-white">예약 큐</h3>
+                <span id="queue-scheduled-count" class="text-sm text-slate-400">-</span>
+              </div>
+              <ul
+                id="queue-scheduled-list"
+                class="mt-4 space-y-3 text-sm text-slate-200"
+              ></ul>
+              <div
+                id="queue-scheduled-empty"
+                class="mt-4 rounded-xl bg-slate-900/50 p-4 text-sm text-slate-400"
+              >
+                예약된 작업이 없습니다.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="rounded-3xl border border-dashboard-border/80 bg-dashboard-surface/70 p-6 shadow-xl shadow-black/40 backdrop-blur"
+        >
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="text-xl font-semibold text-white">갤러리 최신 글</h2>
+            </div>
+          </div>
+          <div
+            id="gallery-posts"
+            class="mt-6 grid gap-6 lg:grid-cols-2 xl:grid-cols-3"
+          ></div>
+        </section>
+
+      </main>
+    </div>
+
+    <div
+      id="create-gallery-modal"
+      class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/90 p-4 backdrop-blur"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="create-gallery-title"
+      aria-hidden="true"
+    >
+      <div class="w-full max-w-2xl rounded-3xl border border-dashboard-border/70 bg-slate-950/95 p-6 shadow-2xl shadow-black/60">
+        <form id="create-gallery-form" class="space-y-6">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 id="create-gallery-title" class="text-lg font-semibold text-white">
+                새 갤러리 추가
+              </h3>
+              <p class="mt-1 text-sm text-slate-400">
+                추가할 갤러리 정보를 입력하면 config.toml에 즉시 반영됩니다.
+              </p>
+            </div>
+            <button
+              type="button"
+              class="rounded-full p-1 text-slate-400 transition hover:text-slate-200"
+              data-close-create-gallery
+              aria-label="닫기"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div class="grid gap-5 sm:grid-cols-2">
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">갤러리 ID<span class="text-rose-300">*</span></span>
+              <input
+                type="text"
+                name="id"
+                required
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+                placeholder="example"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">표시 이름</span>
+              <input
+                type="text"
+                name="name"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+                placeholder="예: 디시인사이드"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">수집 주기(초)</span>
+              <input
+                type="number"
+                name="delay"
+                min="1"
+                step="0.1"
+                value="30"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">목록 페이지 수</span>
+              <input
+                type="number"
+                name="pages"
+                min="1"
+                max="10"
+                value="1"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">요청 간 지연(초)</span>
+              <input
+                type="number"
+                name="fetch_delay"
+                min="0"
+                step="0.1"
+                value="1"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">후속 확인 주기(초, 콤마 구분)</span>
+              <input
+                type="text"
+                name="followup_delays"
+                value="60,300,1800"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">댓글 페이지 수</span>
+              <input
+                type="number"
+                name="max_comment_pages"
+                min="1"
+                value="5"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">댓글 페이지 크기</span>
+              <input
+                type="number"
+                name="comment_page_size"
+                min="10"
+                value="100"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">댓글 지연(초)</span>
+              <input
+                type="number"
+                name="comment_delay"
+                min="0"
+                step="0.1"
+                value="0.5"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">댓글 재확인 간격(초)</span>
+              <input
+                type="number"
+                name="comment_followup_delay"
+                min="0"
+                value="1800"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">최근 댓글 기준(초)</span>
+              <input
+                type="number"
+                name="comment_followup_threshold"
+                min="0"
+                value="300"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">추가 재확인 횟수</span>
+              <input
+                type="number"
+                name="comment_followup_max_retries"
+                min="0"
+                value="3"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">자동 시작</span>
+              <select
+                name="auto_start"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              >
+                <option value="true" selected>예</option>
+                <option value="false">아니오</option>
+              </select>
+            </label>
+          </div>
+
+          <p id="create-gallery-message" class="text-sm text-slate-400"></p>
+
+          <div class="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              class="inline-flex items-center justify-center rounded-xl border border-dashboard-border/70 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:text-slate-100"
+              data-close-create-gallery
+            >
+              취소
+            </button>
+            <button
+              type="submit"
+              data-role="submit"
+              class="inline-flex items-center justify-center rounded-xl border border-emerald-400/60 bg-emerald-500/20 px-4 py-2 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-400/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+            >
+              갤러리 생성
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div
+      id="edit-gallery-modal"
+      class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/90 p-4 backdrop-blur"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-gallery-title"
+      aria-hidden="true"
+    >
+      <div class="w-full max-w-2xl rounded-3xl border border-dashboard-border/70 bg-slate-950/95 p-6 shadow-2xl shadow-black/60">
+        <form id="edit-gallery-form" class="space-y-6">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 id="edit-gallery-title" class="text-lg font-semibold text-white">갤러리 설정 수정</h3>
+              <p class="mt-1 text-sm text-slate-400">선택한 갤러리의 설정을 변경하고 저장합니다.</p>
+            </div>
+            <button
+              type="button"
+              class="rounded-full p-1 text-slate-400 transition hover:text-slate-200"
+              data-close-edit-gallery
+              aria-label="닫기"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div class="grid gap-5 sm:grid-cols-2">
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">갤러리 ID</span>
+              <input
+                type="text"
+                name="id"
+                readonly
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-300 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">표시 이름</span>
+              <input
+                type="text"
+                name="name"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">수집 주기(초)</span>
+              <input
+                type="number"
+                name="delay"
+                min="1"
+                step="0.1"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">목록 페이지 수</span>
+              <input
+                type="number"
+                name="pages"
+                min="1"
+                max="10"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">요청 간 지연(초)</span>
+              <input
+                type="number"
+                name="fetch_delay"
+                min="0"
+                step="0.1"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">후속 확인 주기(초, 콤마 구분)</span>
+              <input
+                type="text"
+                name="followup_delays"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">댓글 페이지 수</span>
+              <input
+                type="number"
+                name="max_comment_pages"
+                min="1"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">댓글 페이지 크기</span>
+              <input
+                type="number"
+                name="comment_page_size"
+                min="10"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">댓글 지연(초)</span>
+              <input
+                type="number"
+                name="comment_delay"
+                min="0"
+                step="0.1"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">댓글 재확인 간격(초)</span>
+              <input
+                type="number"
+                name="comment_followup_delay"
+                min="0"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">최근 댓글 기준(초)</span>
+              <input
+                type="number"
+                name="comment_followup_threshold"
+                min="0"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">추가 재확인 횟수</span>
+              <input
+                type="number"
+                name="comment_followup_max_retries"
+                min="0"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              />
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200">자동 시작</span>
+              <select
+                name="auto_start"
+                class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+              >
+                <option value="true">예</option>
+                <option value="false">아니오</option>
+              </select>
+            </label>
+          </div>
+
+          <p id="edit-gallery-message" class="text-sm text-slate-400"></p>
+
+          <div class="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              class="inline-flex items-center justify-center rounded-xl border border-dashboard-border/70 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:text-slate-100"
+              data-close-edit-gallery
+            >
+              취소
+            </button>
+            <button
+              type="submit"
+              data-role="submit"
+              class="inline-flex items-center justify-center rounded-xl border border-dashboard-border/70 bg-dashboard-surface/60 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:border-dashboard-accent hover:text-dashboard-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+            >
+              변경 저장
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div
+      id="config-editor-modal"
+      class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/90 p-4 backdrop-blur"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="config-editor-title"
+      aria-hidden="true"
+    >
+      <div class="w-full max-w-3xl rounded-3xl border border-dashboard-border/70 bg-slate-950/95 p-6 shadow-2xl shadow-black/60">
+        <form id="config-editor-form" class="space-y-6">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 id="config-editor-title" class="text-lg font-semibold text-white">
+                글로벌 컨피그 수정
+              </h3>
+              <p class="mt-1 text-sm text-slate-400">config.toml 전체를 직접 편집합니다.</p>
+            </div>
+            <button
+              type="button"
+              class="rounded-full p-1 text-slate-400 transition hover:text-slate-200"
+              data-close-config-editor
+              aria-label="닫기"
+            >
+              ✕
+            </button>
+          </div>
+
+          <p id="config-editor-message" class="text-sm text-slate-400"></p>
+
+          <label class="flex flex-col gap-2 text-sm">
+            <span class="font-medium text-slate-200">config.toml</span>
+            <textarea
+              id="config-editor-textarea"
+              name="content"
+              rows="18"
+              class="w-full rounded-2xl border border-dashboard-border/60 bg-slate-900/70 px-3 py-3 text-sm font-mono text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+            ></textarea>
+          </label>
+
+          <div class="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              class="inline-flex items-center justify-center rounded-xl border border-dashboard-border/70 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:text-slate-100"
+              data-close-config-editor
+            >
+              취소
+            </button>
+            <button
+              type="submit"
+              data-role="save-config"
+              class="inline-flex items-center justify-center rounded-xl border border-emerald-400/60 bg-emerald-500/20 px-4 py-2 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-400/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+            >
+              저장
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const statusBody = document.getElementById("status-body");
+      const galleryPostsContainer = document.getElementById("gallery-posts");
+      const reloadButton = document.getElementById("reload-config");
+      const reloadMessage = document.getElementById("reload-message");
+      const editConfigButton = document.getElementById("edit-config-button");
+      const configEditorModal = document.getElementById("config-editor-modal");
+      const configEditorForm = document.getElementById("config-editor-form");
+      const configEditorTextarea = document.getElementById("config-editor-textarea");
+      const configEditorMessage = document.getElementById("config-editor-message");
+      const openCreateGalleryButton = document.getElementById("open-create-gallery");
+      const createGalleryModal = document.getElementById("create-gallery-modal");
+      const createGalleryForm = document.getElementById("create-gallery-form");
+      const createGalleryMessage = document.getElementById("create-gallery-message");
+      const editGalleryModal = document.getElementById("edit-gallery-modal");
+      const editGalleryForm = document.getElementById("edit-gallery-form");
+      const editGalleryMessage = document.getElementById("edit-gallery-message");
+      const queueUpdatedAt = document.getElementById("queue-updated-at");
+      const queueCollectingCount = document.getElementById("queue-collecting-count");
+      const queueScheduledCount = document.getElementById("queue-scheduled-count");
+      const queueCollectingList = document.getElementById("queue-collecting-list");
+      const queueScheduledList = document.getElementById("queue-scheduled-list");
+      const queueCollectingEmpty = document.getElementById("queue-collecting-empty");
+      const queueScheduledEmpty = document.getElementById("queue-scheduled-empty");
+      const latestStatusMap = new Map();
+      const scheduledCountdowns = new Map();
+
+      async function fetchStatus() {
+        try {
+          const response = await fetch("/api/status");
+          const data = await response.json();
+          renderStatus(data);
+        } catch (error) {
+          console.error("Failed to fetch status", error);
+        }
+      }
+
+      async function fetchGalleryPosts() {
+        try {
+          const response = await fetch("/api/dashboard/posts?limit=6");
+          if (!response.ok) {
+            throw new Error(`API error ${response.status}`);
+          }
+          const data = await response.json();
+          renderGalleryPosts(data);
+        } catch (error) {
+          console.error("Failed to fetch gallery posts", error);
+        }
+      }
+
+      async function fetchQueueOverview() {
+        try {
+          const response = await fetch("/api/dashboard/queue?limit=10");
+          if (!response.ok) {
+            throw new Error(`API error ${response.status}`);
+          }
+          const data = await response.json();
+          renderQueueOverview(data);
+        } catch (error) {
+          console.error("Failed to fetch queue overview", error);
+        }
+      }
+
+      function setReloadMessage(message, variant = "info") {
+        if (!reloadMessage) return;
+        reloadMessage.textContent = message;
+        reloadMessage.classList.remove("text-emerald-300", "text-rose-300", "text-slate-400");
+        const className =
+          variant === "success"
+            ? "text-emerald-300"
+            : variant === "error"
+            ? "text-rose-300"
+            : "text-slate-400";
+        reloadMessage.classList.add(className);
+      }
+
+      function setConfigEditorMessage(message, variant = "info") {
+        if (!configEditorMessage) return;
+        configEditorMessage.textContent = message;
+        configEditorMessage.classList.remove("text-emerald-300", "text-rose-300", "text-slate-400");
+        const className =
+          variant === "success"
+            ? "text-emerald-300"
+            : variant === "error"
+            ? "text-rose-300"
+            : "text-slate-400";
+        configEditorMessage.classList.add(className);
+      }
+
+      function formatBytes(bytes) {
+        const value = Number(bytes);
+        if (!Number.isFinite(value) || value <= 0) {
+          return "0 B";
+        }
+        const units = ["B", "KB", "MB", "GB", "TB", "PB"];
+        let index = 0;
+        let amount = value;
+        while (amount >= 1024 && index < units.length - 1) {
+          amount /= 1024;
+          index += 1;
+        }
+        const display = amount >= 10 || index === 0 ? amount.toFixed(0) : amount.toFixed(1);
+        return `${display} ${units[index]}`;
+      }
+
+      function formatDuration(seconds) {
+        const total = Math.max(0, Math.floor(Number(seconds) || 0));
+        const hours = Math.floor(total / 3600);
+        const minutes = Math.floor((total % 3600) / 60);
+        const secs = total % 60;
+        if (hours > 0) {
+          return `${hours}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+        }
+        return `${minutes}:${String(secs).padStart(2, "0")}`;
+      }
+
+      function setCreateGalleryMessage(message, variant = "info") {
+        if (!createGalleryMessage) return;
+        createGalleryMessage.textContent = message;
+        createGalleryMessage.classList.remove(
+          "text-emerald-300",
+          "text-rose-300",
+          "text-slate-400"
+        );
+        const className =
+          variant === "success"
+            ? "text-emerald-300"
+            : variant === "error"
+            ? "text-rose-300"
+            : "text-slate-400";
+        createGalleryMessage.classList.add(className);
+      }
+
+      function setEditGalleryMessage(message, variant = "info") {
+        if (!editGalleryMessage) return;
+        editGalleryMessage.textContent = message;
+        editGalleryMessage.classList.remove(
+          "text-emerald-300",
+          "text-rose-300",
+          "text-slate-400"
+        );
+        const className =
+          variant === "success"
+            ? "text-emerald-300"
+            : variant === "error"
+            ? "text-rose-300"
+            : "text-slate-400";
+        editGalleryMessage.classList.add(className);
+      }
+
+      function openEditGalleryModal(status) {
+        if (!editGalleryModal || !editGalleryForm) return;
+        editGalleryForm.reset();
+        editGalleryForm.dataset.galleryId = status.gallery_id;
+        setEditGalleryMessage("");
+
+        const setInputValue = (selector, value) => {
+          const element = editGalleryForm.querySelector(selector);
+          if (element instanceof HTMLInputElement || element instanceof HTMLSelectElement) {
+            element.value = value ?? "";
+          }
+        };
+
+        setInputValue("input[name='id']", status.gallery_id ?? "");
+        setInputValue("input[name='name']", status.name ?? "");
+        setInputValue("input[name='delay']", status.delay ?? "");
+        setInputValue("input[name='fetch_delay']", status.fetch_delay ?? "");
+        setInputValue("input[name='pages']", status.pages ?? "");
+        const followups = Array.isArray(status.followup_delays)
+          ? status.followup_delays.map((value) => Number(value).toString()).join(", ")
+          : "";
+        setInputValue("input[name='followup_delays']", followups);
+        setInputValue("input[name='max_comment_pages']", status.max_comment_pages ?? "");
+        setInputValue("input[name='comment_page_size']", status.comment_page_size ?? "");
+        setInputValue("input[name='comment_delay']", status.comment_delay ?? "");
+        setInputValue("input[name='comment_followup_delay']", status.comment_followup_delay ?? "");
+        setInputValue(
+          "input[name='comment_followup_threshold']",
+          status.comment_followup_threshold ?? ""
+        );
+        setInputValue(
+          "input[name='comment_followup_max_retries']",
+          status.comment_followup_max_retries ?? ""
+        );
+        const autoStartSelect = editGalleryForm.querySelector("select[name='auto_start']");
+        if (autoStartSelect instanceof HTMLSelectElement) {
+          autoStartSelect.value = status.auto_start ? "true" : "false";
+        }
+
+        editGalleryModal.classList.remove("hidden");
+        editGalleryModal.classList.add("flex");
+        editGalleryModal.setAttribute("aria-hidden", "false");
+        const nameInput = editGalleryForm.querySelector("input[name='name']");
+        if (nameInput instanceof HTMLInputElement) {
+          nameInput.focus();
+        }
+      }
+
+      function closeEditGalleryModal() {
+        if (!editGalleryModal || !editGalleryForm) return;
+        editGalleryModal.classList.add("hidden");
+        editGalleryModal.classList.remove("flex");
+        editGalleryModal.setAttribute("aria-hidden", "true");
+        editGalleryForm.reset();
+        delete editGalleryForm.dataset.galleryId;
+        setEditGalleryMessage("");
+      }
+
+      function openCreateGalleryModal() {
+        if (!createGalleryModal) return;
+        createGalleryModal.classList.remove("hidden");
+        createGalleryModal.classList.add("flex");
+        createGalleryModal.setAttribute("aria-hidden", "false");
+        setCreateGalleryMessage("");
+        if (createGalleryForm) {
+          createGalleryForm.reset();
+          const firstInput = createGalleryForm.querySelector("input[name='id']");
+          if (firstInput instanceof HTMLInputElement) {
+            firstInput.focus();
+          }
+        }
+      }
+
+      function closeCreateGalleryModal() {
+        if (!createGalleryModal) return;
+        createGalleryModal.classList.add("hidden");
+        createGalleryModal.classList.remove("flex");
+        createGalleryModal.setAttribute("aria-hidden", "true");
+        if (createGalleryForm) {
+          createGalleryForm.reset();
+        }
+        setCreateGalleryMessage("");
+      }
+
+      async function openConfigEditorModal() {
+        if (!configEditorModal) return;
+        configEditorModal.classList.remove("hidden");
+        configEditorModal.classList.add("flex");
+        configEditorModal.setAttribute("aria-hidden", "false");
+        setConfigEditorMessage("컨피그를 불러오는 중입니다...", "info");
+        if (configEditorTextarea) {
+          configEditorTextarea.value = "";
+          configEditorTextarea.focus();
+        }
+        try {
+          const response = await fetch("/api/config/raw");
+          if (!response.ok) {
+            throw new Error(`API error ${response.status}`);
+          }
+          const data = await response.json();
+          if (configEditorTextarea) {
+            configEditorTextarea.value = data?.content ?? "";
+            configEditorTextarea.focus();
+            const length = configEditorTextarea.value.length;
+            configEditorTextarea.setSelectionRange(length, length);
+          }
+          setConfigEditorMessage("컨피그를 불러왔습니다.", "success");
+        } catch (error) {
+          console.error("Failed to load config", error);
+          setConfigEditorMessage("컨피그를 불러오지 못했습니다.", "error");
+        }
+      }
+
+      function closeConfigEditorModal() {
+        if (!configEditorModal) return;
+        configEditorModal.classList.add("hidden");
+        configEditorModal.classList.remove("flex");
+        configEditorModal.setAttribute("aria-hidden", "true");
+        if (configEditorForm) {
+          configEditorForm.reset();
+        }
+        setConfigEditorMessage("");
+      }
+
+      if (editConfigButton) {
+        editConfigButton.addEventListener("click", () => {
+          openConfigEditorModal();
+        });
+      }
+
+      if (openCreateGalleryButton) {
+        openCreateGalleryButton.addEventListener("click", () => {
+          openCreateGalleryModal();
+        });
+      }
+
+      if (createGalleryModal) {
+        createGalleryModal.addEventListener("click", (event) => {
+          if (event.target === createGalleryModal) {
+            closeCreateGalleryModal();
+          }
+        });
+      }
+
+      if (configEditorModal) {
+        configEditorModal.addEventListener("click", (event) => {
+          if (event.target === configEditorModal) {
+            closeConfigEditorModal();
+          }
+        });
+      }
+
+      const closeCreateGalleryButtons = document.querySelectorAll(
+        "[data-close-create-gallery]"
+      );
+      closeCreateGalleryButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          closeCreateGalleryModal();
+        });
+      });
+
+      const closeConfigEditorButtons = document.querySelectorAll(
+        "[data-close-config-editor]"
+      );
+      closeConfigEditorButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          closeConfigEditorModal();
+        });
+      });
+
+      if (editGalleryModal) {
+        editGalleryModal.addEventListener("click", (event) => {
+          if (event.target === editGalleryModal) {
+            closeEditGalleryModal();
+          }
+        });
+      }
+
+      const closeEditGalleryButtons = document.querySelectorAll("[data-close-edit-gallery]");
+      closeEditGalleryButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          closeEditGalleryModal();
+        });
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") return;
+        if (createGalleryModal && !createGalleryModal.classList.contains("hidden")) {
+          closeCreateGalleryModal();
+        }
+        if (editGalleryModal && !editGalleryModal.classList.contains("hidden")) {
+          closeEditGalleryModal();
+        }
+        if (configEditorModal && !configEditorModal.classList.contains("hidden")) {
+          closeConfigEditorModal();
+        }
+      });
+
+      if (createGalleryForm) {
+        createGalleryForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const formData = new FormData(createGalleryForm);
+          const id = String(formData.get("id") ?? "").trim();
+          if (!id) {
+            setCreateGalleryMessage("갤러리 ID를 입력해주세요.", "error");
+            return;
+          }
+
+          const parseNumber = (value, fallback) => {
+            const number = Number.parseFloat(String(value ?? ""));
+            return Number.isNaN(number) ? fallback : number;
+          };
+
+          const followupRaw = String(formData.get("followup_delays") ?? "");
+          const followupDelays = followupRaw
+            .split(",")
+            .map((token) => Number.parseFloat(token.trim()))
+            .filter((value) => Number.isFinite(value) && value >= 0);
+
+          const payload = {
+            id,
+            name: String(formData.get("name") ?? "").trim() || null,
+            delay: Math.max(1, parseNumber(formData.get("delay"), 30)),
+            fetch_delay: Math.max(0, parseNumber(formData.get("fetch_delay"), 1)),
+            pages: Math.max(1, Math.min(10, Math.trunc(parseNumber(formData.get("pages"), 1)))),
+            followup_delays: followupDelays.length ? followupDelays : [60, 300, 1800],
+            auto_start: String(formData.get("auto_start") ?? "true") === "true",
+            max_comment_pages: Math.max(1, Math.trunc(parseNumber(formData.get("max_comment_pages"), 5))),
+            comment_page_size: Math.max(10, Math.trunc(parseNumber(formData.get("comment_page_size"), 100))),
+            comment_delay: Math.max(0, parseNumber(formData.get("comment_delay"), 0.5)),
+            comment_followup_delay: Math.max(
+              0,
+              parseNumber(formData.get("comment_followup_delay"), 1800)
+            ),
+            comment_followup_threshold: Math.max(
+              0,
+              parseNumber(formData.get("comment_followup_threshold"), 300)
+            ),
+            comment_followup_max_retries: Math.max(
+              0,
+              Math.trunc(parseNumber(formData.get("comment_followup_max_retries"), 3))
+            ),
+          };
+
+          const submitButton = createGalleryForm.querySelector("[data-role='submit']");
+          if (submitButton instanceof HTMLButtonElement) {
+            submitButton.disabled = true;
+            submitButton.classList.add("opacity-60", "cursor-not-allowed");
+          }
+          setCreateGalleryMessage("갤러리를 생성하는 중입니다...", "info");
+
+          try {
+            const response = await fetch("/api/galleries", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+            if (!response.ok) {
+              const error = await response.json().catch(() => ({}));
+              const message = error?.detail ?? `API 오류 ${response.status}`;
+              throw new Error(message);
+            }
+            setCreateGalleryMessage("새 갤러리를 추가했습니다.", "success");
+            await refreshDashboard();
+            setTimeout(() => {
+              closeCreateGalleryModal();
+            }, 800);
+          } catch (error) {
+            console.error("Failed to create gallery", error);
+            setCreateGalleryMessage("갤러리 생성에 실패했습니다.", "error");
+          } finally {
+            if (submitButton instanceof HTMLButtonElement) {
+              submitButton.disabled = false;
+              submitButton.classList.remove("opacity-60", "cursor-not-allowed");
+            }
+          }
+        });
+      }
+
+      if (editGalleryForm) {
+        editGalleryForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const galleryId = editGalleryForm.dataset.galleryId;
+          if (!galleryId) {
+            setEditGalleryMessage("갤러리 정보를 찾을 수 없습니다.", "error");
+            return;
+          }
+
+          const formData = new FormData(editGalleryForm);
+          formData.delete("id");
+          const currentStatus = latestStatusMap.get(galleryId) ?? {};
+
+          const parseNumber = (value, fallback) => {
+            const number = Number.parseFloat(String(value ?? ""));
+            return Number.isNaN(number) ? fallback : number;
+          };
+
+          const followupRaw = String(formData.get("followup_delays") ?? "");
+          const followupDelays = followupRaw
+            .split(",")
+            .map((token) => Number.parseFloat(token.trim()))
+            .filter((value) => Number.isFinite(value) && value >= 0);
+
+          const payload = {
+            name: String(formData.get("name") ?? "").trim() || null,
+            delay: Math.max(1, parseNumber(formData.get("delay"), currentStatus.delay ?? 30)),
+            fetch_delay: Math.max(
+              0,
+              parseNumber(formData.get("fetch_delay"), currentStatus.fetch_delay ?? 1)
+            ),
+            pages: Math.max(
+              1,
+              Math.min(10, Math.trunc(parseNumber(formData.get("pages"), currentStatus.pages ?? 1)))
+            ),
+            followup_delays:
+              followupDelays.length && followupDelays.every((value) => Number.isFinite(value))
+                ? followupDelays
+                : Array.isArray(currentStatus.followup_delays)
+                ? currentStatus.followup_delays
+                : [60, 300, 1800],
+            auto_start: String(formData.get("auto_start") ?? "true") === "true",
+            max_comment_pages: Math.max(
+              1,
+              Math.trunc(
+                parseNumber(
+                  formData.get("max_comment_pages"),
+                  currentStatus.max_comment_pages ?? 5
+                )
+              )
+            ),
+            comment_page_size: Math.max(
+              10,
+              Math.trunc(
+                parseNumber(
+                  formData.get("comment_page_size"),
+                  currentStatus.comment_page_size ?? 100
+                )
+              )
+            ),
+            comment_delay: Math.max(
+              0,
+              parseNumber(formData.get("comment_delay"), currentStatus.comment_delay ?? 0.5)
+            ),
+            comment_followup_delay: Math.max(
+              0,
+              parseNumber(
+                formData.get("comment_followup_delay"),
+                currentStatus.comment_followup_delay ?? 1800
+              )
+            ),
+            comment_followup_threshold: Math.max(
+              0,
+              parseNumber(
+                formData.get("comment_followup_threshold"),
+                currentStatus.comment_followup_threshold ?? 300
+              )
+            ),
+            comment_followup_max_retries: Math.max(
+              0,
+              Math.trunc(
+                parseNumber(
+                  formData.get("comment_followup_max_retries"),
+                  currentStatus.comment_followup_max_retries ?? 3
+                )
+              )
+            ),
+          };
+
+          const submitButton = editGalleryForm.querySelector("[data-role='submit']");
+          if (submitButton instanceof HTMLButtonElement) {
+            submitButton.disabled = true;
+            submitButton.classList.add("opacity-60", "cursor-not-allowed");
+          }
+          setEditGalleryMessage("설정을 저장하는 중입니다...", "info");
+
+          try {
+            const response = await fetch(`/api/galleries/${encodeURIComponent(galleryId)}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+            if (!response.ok) {
+              const error = await response.json().catch(() => ({}));
+              const message = error?.detail ?? `API 오류 ${response.status}`;
+              throw new Error(message);
+            }
+            setEditGalleryMessage("설정을 업데이트했습니다.", "success");
+            await refreshDashboard();
+            setTimeout(() => {
+              closeEditGalleryModal();
+            }, 800);
+          } catch (error) {
+            console.error("Failed to update gallery", error);
+            setEditGalleryMessage("설정 저장에 실패했습니다.", "error");
+          } finally {
+            if (submitButton instanceof HTMLButtonElement) {
+              submitButton.disabled = false;
+              submitButton.classList.remove("opacity-60", "cursor-not-allowed");
+            }
+          }
+        });
+      }
+
+      if (configEditorForm) {
+        configEditorForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          if (!configEditorTextarea) {
+            setConfigEditorMessage("편집할 내용을 불러오지 못했습니다.", "error");
+            return;
+          }
+          const saveButton = configEditorForm.querySelector("[data-role='save-config']");
+          if (saveButton instanceof HTMLButtonElement) {
+            saveButton.disabled = true;
+            saveButton.classList.add("opacity-60", "cursor-not-allowed");
+          }
+          setConfigEditorMessage("컨피그를 저장하는 중입니다...", "info");
+          try {
+            const response = await fetch("/api/config/raw", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ content: configEditorTextarea.value }),
+            });
+            if (!response.ok) {
+              const error = await response.json().catch(() => ({}));
+              const message = error?.detail ?? `API 오류 ${response.status}`;
+              throw new Error(message);
+            }
+            setConfigEditorMessage("컨피그를 저장했습니다.", "success");
+            await refreshDashboard();
+            setTimeout(() => {
+              closeConfigEditorModal();
+            }, 800);
+          } catch (error) {
+            console.error("Failed to save config", error);
+            setConfigEditorMessage(
+              error?.message ?? "컨피그 저장에 실패했습니다.",
+              "error"
+            );
+          } finally {
+            if (saveButton instanceof HTMLButtonElement) {
+              saveButton.disabled = false;
+              saveButton.classList.remove("opacity-60", "cursor-not-allowed");
+            }
+          }
+        });
+      }
+
+      if (reloadButton) {
+        reloadButton.addEventListener("click", async () => {
+          if (reloadButton.disabled) return;
+          reloadButton.disabled = true;
+          reloadButton.classList.add("opacity-60", "cursor-not-allowed");
+          setReloadMessage("컨피그 리로드 중...", "info");
+          try {
+            const response = await fetch("/api/config/reload", { method: "POST" });
+            if (!response.ok) {
+              throw new Error(`API error ${response.status}`);
+            }
+            setReloadMessage("컨피그를 다시 불러왔습니다.", "success");
+            await refreshDashboard();
+          } catch (error) {
+            console.error("Failed to reload config", error);
+            setReloadMessage("리로드에 실패했습니다.", "error");
+          } finally {
+            reloadButton.disabled = false;
+            reloadButton.classList.remove("opacity-60", "cursor-not-allowed");
+          }
+        });
+      }
+
+      function renderQueueOverview(data) {
+        if (!data) return;
+
+        const collectingTotal = Number(data.collecting_total) || 0;
+        const scheduledTotal = Number(data.scheduled_total) || 0;
+        if (queueCollectingCount) {
+          queueCollectingCount.textContent = `${collectingTotal}건`;
+        }
+        if (queueScheduledCount) {
+          queueScheduledCount.textContent = `${scheduledTotal}건`;
+        }
+
+        if (queueUpdatedAt) {
+          if (data.generated_at) {
+            try {
+              queueUpdatedAt.textContent = new Date(data.generated_at).toLocaleTimeString();
+            } catch (error) {
+              console.error("Failed to parse queue timestamp", error);
+              queueUpdatedAt.textContent = "-";
+            }
+          } else {
+            queueUpdatedAt.textContent = "-";
+          }
+        }
+
+        const collectingItems = Array.isArray(data.collecting) ? data.collecting : [];
+        const scheduledItems = Array.isArray(data.scheduled) ? data.scheduled : [];
+
+        scheduledCountdowns.clear();
+
+        if (queueCollectingList) {
+          queueCollectingList.innerHTML = "";
+          if (collectingItems.length) {
+            queueCollectingList.classList.remove("hidden");
+            if (queueCollectingEmpty) {
+              queueCollectingEmpty.classList.add("hidden");
+            }
+            collectingItems.forEach((item) => {
+              const entry = document.createElement("li");
+              entry.className =
+                "flex items-center justify-between gap-3 rounded-xl border border-dashboard-border/60 bg-slate-900/50 px-3 py-2";
+
+              const info = document.createElement("div");
+              info.className = "flex items-center gap-2";
+              if (item.manual) {
+                const manualBadge = document.createElement("span");
+                manualBadge.className =
+                  "inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-300";
+                manualBadge.textContent = "수동";
+                info.appendChild(manualBadge);
+              }
+              const label = document.createElement("span");
+              label.className = "font-medium text-slate-200";
+              const galleryId = String(item.gallery_id ?? "");
+              const postId = String(item.post_id ?? "");
+              label.textContent = `${galleryId} · ${postId}`;
+              info.appendChild(label);
+              entry.appendChild(info);
+
+              const state = document.createElement("span");
+              state.className =
+                item.state === "processing"
+                  ? "text-xs font-semibold text-emerald-300"
+                  : "text-xs text-slate-400";
+              state.textContent = item.state === "processing" ? "진행중" : "대기";
+              entry.appendChild(state);
+
+              queueCollectingList.appendChild(entry);
+            });
+          } else {
+            queueCollectingList.classList.add("hidden");
+            if (queueCollectingEmpty) {
+              queueCollectingEmpty.textContent = "대기 중인 작업이 없습니다.";
+              queueCollectingEmpty.classList.remove("hidden");
+            }
+          }
+        }
+
+        if (queueScheduledList) {
+          queueScheduledList.innerHTML = "";
+          if (scheduledItems.length) {
+            queueScheduledList.classList.remove("hidden");
+            if (queueScheduledEmpty) {
+              queueScheduledEmpty.classList.add("hidden");
+            }
+            scheduledItems.forEach((item) => {
+              const entry = document.createElement("li");
+              entry.className =
+                "flex items-center justify-between gap-3 rounded-xl border border-dashboard-border/60 bg-slate-900/50 px-3 py-2";
+
+              const info = document.createElement("div");
+              info.className = "flex items-center gap-2";
+              if (item.manual) {
+                const manualBadge = document.createElement("span");
+                manualBadge.className =
+                  "inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-300";
+                manualBadge.textContent = "수동";
+                info.appendChild(manualBadge);
+              }
+              const label = document.createElement("span");
+              label.className = "font-medium text-slate-200";
+              const galleryId = String(item.gallery_id ?? "");
+              const postId = String(item.post_id ?? "");
+              label.textContent = `${galleryId} · ${postId}`;
+              info.appendChild(label);
+              entry.appendChild(info);
+
+              const countdownWrapper = document.createElement("div");
+              countdownWrapper.className = "flex items-center gap-2 text-xs text-slate-400";
+              const countdownLabel = document.createElement("span");
+              countdownLabel.textContent = "남은시간";
+              countdownWrapper.appendChild(countdownLabel);
+              const countdownValue = document.createElement("span");
+              countdownValue.className = "font-semibold text-dashboard-accent";
+              countdownValue.textContent = formatDuration(item.available_in);
+              const availableAt = Number(item.available_at) || 0;
+              if (availableAt) {
+                countdownValue.title = new Date(availableAt * 1000).toLocaleString();
+              }
+              countdownWrapper.appendChild(countdownValue);
+              entry.appendChild(countdownWrapper);
+
+              queueScheduledList.appendChild(entry);
+              scheduledCountdowns.set(String(item.queue_id), {
+                element: countdownValue,
+                availableAt,
+              });
+            });
+          } else {
+            queueScheduledList.classList.add("hidden");
+            if (queueScheduledEmpty) {
+              queueScheduledEmpty.textContent = "예약된 작업이 없습니다.";
+              queueScheduledEmpty.classList.remove("hidden");
+            }
+          }
+        }
+      }
+
+      function updateScheduledCountdowns() {
+        if (!scheduledCountdowns.size) return;
+        const now = Date.now() / 1000;
+        for (const [key, data] of scheduledCountdowns.entries()) {
+          const { element, availableAt } = data;
+          if (!(element instanceof HTMLElement) || !element.isConnected) {
+            scheduledCountdowns.delete(key);
+            continue;
+          }
+          const remaining = Math.max(0, (Number(availableAt) || 0) - now);
+          element.textContent = formatDuration(remaining);
+        }
+      }
+
+      function renderStatus(statuses) {
+        statusBody.innerHTML = "";
+        latestStatusMap.clear();
+        statuses.forEach((status) => {
+          const row = document.createElement("tr");
+          row.className = "divide-x divide-dashboard-border/80";
+          const statusBadgeClass = status.running
+            ? "inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300"
+            : "inline-flex items-center gap-2 rounded-full bg-slate-500/10 px-3 py-1 text-xs font-medium text-slate-300";
+          const dbSizeText = formatBytes(status.db_size_bytes ?? 0);
+          row.innerHTML = `
+            <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-white">${status.gallery_id}</td>
+            <td class="max-w-[12rem] truncate px-4 py-4 text-sm text-slate-300">${status.name ?? ""}</td>
+            <td class="px-4 py-4"><span class="${statusBadgeClass}">${status.running ? "수집 중" : "중지"}</span></td>
+            <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-200">${status.total_posts}</td>
+            <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-200">${dbSizeText}</td>
+            <td class="queue-cell px-4 py-4 align-top text-xs text-slate-400"></td>
+            <td class="whitespace-nowrap px-4 py-4 text-xs text-slate-400">${status.last_activity ? new Date(status.last_activity).toLocaleString() : "-"}</td>
+            <td class="max-w-[16rem] px-4 py-4 text-xs text-rose-300/80">${status.last_error ?? ""}</td>
+            <td class="px-4 py-4">
+              <div class="flex justify-end gap-2">
+                <button data-action="edit-config" data-gallery="${status.gallery_id}" class="inline-flex items-center justify-center rounded-xl border border-dashboard-border/60 bg-dashboard-surface/60 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:border-dashboard-accent hover:text-dashboard-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">설정</button>
+                <button data-action="start" data-gallery="${status.gallery_id}" class="inline-flex items-center justify-center rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-400/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">시작</button>
+                <button data-action="stop" data-gallery="${status.gallery_id}" class="inline-flex items-center justify-center rounded-xl border border-rose-400/40 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-200 transition hover:bg-rose-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">중지</button>
+              </div>
+            </td>
+          `;
+          const queueCell = row.querySelector(".queue-cell");
+          if (queueCell) {
+            const count = document.createElement("div");
+            count.className = "text-sm font-medium text-slate-200";
+            const queueSize = typeof status.queue_size === "number" ? status.queue_size : 0;
+            count.textContent = `${queueSize}건`;
+            queueCell.appendChild(count);
+
+            const queueItems = Array.isArray(status.queue) ? status.queue : [];
+            if (queueItems.length) {
+              const list = document.createElement("ul");
+              list.className = "mt-2 space-y-1";
+              queueItems.forEach((item) => {
+                const entry = document.createElement("li");
+                entry.className = "truncate text-xs";
+                const stateBadge = document.createElement("span");
+                stateBadge.className =
+                  item.state === "processing"
+                    ? "mr-2 inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-300"
+                    : "mr-2 inline-flex items-center rounded-full bg-slate-800/80 px-2 py-0.5 text-[10px] font-semibold text-slate-400";
+                stateBadge.textContent = item.state === "processing" ? "진행중" : "대기";
+                entry.appendChild(stateBadge);
+
+                const text = document.createElement("span");
+                const galleryId = String(item.gallery_id ?? status.gallery_id ?? "");
+                const postId = String(item.post_id ?? "");
+                const title = item.title ? String(item.title) : "";
+                text.textContent = `${galleryId} · ${postId}`;
+                if (title) {
+                  text.title = title;
+                }
+                entry.appendChild(text);
+
+                list.appendChild(entry);
+              });
+              queueCell.appendChild(list);
+            } else {
+              const empty = document.createElement("div");
+              empty.className = "mt-2 text-xs text-slate-500";
+              empty.textContent = "대기 없음";
+              queueCell.appendChild(empty);
+            }
+          }
+
+          statusBody.appendChild(row);
+          latestStatusMap.set(status.gallery_id, status);
+        });
+      }
+
+      function renderGalleryPosts(galleries) {
+        galleryPostsContainer.innerHTML = "";
+        if (!galleries.length) {
+          const empty = document.createElement("div");
+          empty.className = "rounded-2xl border border-dashboard-border/60 bg-slate-950/60 p-6 text-sm text-slate-400";
+          empty.textContent = "표시할 게시글이 없습니다.";
+          galleryPostsContainer.appendChild(empty);
+          return;
+        }
+
+        galleries.forEach((gallery) => {
+          const card = document.createElement("article");
+          card.className = "flex flex-col gap-4 rounded-2xl border border-dashboard-border/70 bg-slate-950/70 p-5 shadow-inner shadow-black/30";
+
+          const header = document.createElement("div");
+          header.className = "flex items-center justify-between gap-3";
+
+          const titleWrapper = document.createElement("div");
+          const title = document.createElement("h3");
+          title.className = "text-base font-semibold text-white";
+          title.textContent = gallery.gallery_id;
+          titleWrapper.appendChild(title);
+          const subtitle = document.createElement("p");
+          subtitle.className = "text-xs text-slate-400";
+          subtitle.textContent = gallery.name ?? "";
+          titleWrapper.appendChild(subtitle);
+          header.appendChild(titleWrapper);
+
+          const actions = document.createElement("div");
+          actions.className = "flex items-center gap-3 text-xs";
+
+          const moreLink = document.createElement("a");
+          moreLink.href = `/list.html?id=${gallery.gallery_id}`;
+          moreLink.className = "font-semibold text-emerald-300 hover:text-emerald-200";
+          moreLink.textContent = "더보기";
+          actions.appendChild(moreLink);
+
+          const apiLink = document.createElement("a");
+          apiLink.href = `/api/galleries/${gallery.gallery_id}/posts?page=1&page_size=20`;
+          apiLink.className = "text-dashboard-accent hover:text-emerald-300";
+          apiLink.target = "_blank";
+          apiLink.rel = "noreferrer";
+          apiLink.textContent = "API";
+          actions.appendChild(apiLink);
+
+          header.appendChild(actions);
+          card.appendChild(header);
+
+          if (!gallery.posts.length) {
+            const placeholder = document.createElement("div");
+            placeholder.className = "rounded-xl bg-slate-900/60 p-4 text-sm text-slate-400";
+            placeholder.textContent = "수집된 게시글이 없습니다.";
+            card.appendChild(placeholder);
+          } else {
+            const list = document.createElement("ul");
+            list.className = "flex flex-col divide-y divide-dashboard-border/60";
+            gallery.posts.forEach((post) => {
+              const item = document.createElement("li");
+              item.className = "flex flex-col gap-1 py-3";
+              const titleLink = document.createElement("a");
+              titleLink.href = `/view.html?id=${gallery.gallery_id}&no=${post.post_id}`;
+              titleLink.className = "text-sm font-medium text-emerald-300 hover:text-emerald-200";
+              titleLink.textContent = post.title ?? "제목 없음";
+              item.appendChild(titleLink);
+
+              const meta = document.createElement("div");
+              meta.className = "text-xs text-slate-400";
+              meta.textContent = `${post.post_id} · ${post.nickname ?? "익명"} · ${post.created_at ?? ""}`;
+              item.appendChild(meta);
+
+              list.appendChild(item);
+            });
+            card.appendChild(list);
+          }
+
+          galleryPostsContainer.appendChild(card);
+        });
+      }
+
+      statusBody.addEventListener("click", async (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) return;
+        const { action, gallery } = button.dataset;
+        if (!gallery) return;
+        if (action === "edit-config") {
+          const status = latestStatusMap.get(gallery);
+          if (status) {
+            openEditGalleryModal(status);
+          }
+          return;
+        }
+        try {
+          await fetch(`/api/galleries/${gallery}/${action}`, { method: "POST" });
+          await fetchStatus();
+        } catch (error) {
+          console.error("Failed to toggle gallery", error);
+        }
+      });
+
+      async function refreshDashboard() {
+        await Promise.all([
+          fetchStatus(),
+          fetchGalleryPosts(),
+          fetchQueueOverview(),
+        ]);
+      }
+
+      refreshDashboard();
+      setInterval(refreshDashboard, 5000);
+      setInterval(updateScheduledCountdowns, 1000);
+    </script>
+  </body>
+</html>

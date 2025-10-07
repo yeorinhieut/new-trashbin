@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="ko" class="h-full bg-slate-950">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>게시글 목록 · Trashbin</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              display: ["Pretendard Variable", "Inter", "sans-serif"],
+              body: ["Pretendard Variable", "Inter", "sans-serif"],
+            },
+            colors: {
+              dashboard: {
+                surface: "#0f172a",
+                border: "#1f2a44",
+                accent: "#34d399",
+              },
+            },
+            boxShadow: {
+              glow: "0 20px 45px -25px rgba(15, 118, 110, 0.75)",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="min-h-full bg-slate-950 text-slate-100">
+    <div class="mx-auto flex min-h-screen max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+      <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-white sm:text-4xl">게시글 목록</h1>
+          <p id="status-notice" class="mt-2 text-sm text-slate-400">
+            갤러리를 선택해 게시글을 살펴보세요.
+          </p>
+        </div>
+        <div class="flex gap-3">
+          <a
+            href="/"
+            class="inline-flex items-center justify-center rounded-2xl border border-dashboard-border/70 bg-dashboard-surface/60 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-dashboard-accent hover:text-dashboard-accent"
+          >
+            대시보드로 돌아가기
+          </a>
+        </div>
+      </header>
+
+      <main class="flex flex-1 flex-col gap-8 pb-16">
+        <section class="rounded-3xl border border-dashboard-border/70 bg-dashboard-surface/70 p-6 shadow-xl shadow-black/40 backdrop-blur">
+          <form id="filter-form" class="space-y-6">
+            <div class="grid gap-4 md:grid-cols-4">
+              <label class="flex flex-col gap-2 text-sm">
+                <span class="font-medium text-slate-200">갤러리</span>
+                <select
+                  id="gallery-select"
+                  required
+                  class="block w-full rounded-2xl border border-dashboard-border/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+                >
+                  <option value="" disabled selected>갤러리를 불러오는 중...</option>
+                </select>
+              </label>
+              <label class="flex flex-col gap-2 text-sm">
+                <span class="font-medium text-slate-200">제목/본문 검색어</span>
+                <input
+                  id="search"
+                  placeholder="검색어"
+                  class="block w-full rounded-2xl border border-dashboard-border/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+                />
+              </label>
+              <label class="flex flex-col gap-2 text-sm">
+                <span class="font-medium text-slate-200">작성자</span>
+                <input
+                  id="author"
+                  placeholder="닉네임"
+                  class="block w-full rounded-2xl border border-dashboard-border/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+                />
+              </label>
+              <label class="flex flex-col gap-2 text-sm">
+                <span class="font-medium text-slate-200">ID</span>
+                <input
+                  id="user-id"
+                  placeholder="아이디"
+                  class="block w-full rounded-2xl border border-dashboard-border/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
+                />
+              </label>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <label class="inline-flex items-center gap-2 text-sm text-slate-300">
+                <input
+                  id="deleted-only"
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-slate-600 bg-slate-900 text-dashboard-accent focus:ring-dashboard-accent/50"
+                />
+                <span>삭제된 글만 보기</span>
+              </label>
+              <button
+                type="submit"
+                class="inline-flex items-center justify-center gap-2 rounded-2xl bg-dashboard-accent px-5 py-2 text-sm font-semibold text-slate-900 shadow-glow transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+              >
+                검색하기
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section
+          id="llm-summary-panel"
+          class="hidden rounded-3xl border border-dashboard-border/70 bg-dashboard-surface/70 p-6 shadow-xl shadow-black/40 backdrop-blur"
+        >
+          <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div class="space-y-1">
+              <h2 class="text-xl font-semibold text-white">갤떡요약</h2>
+            </div>
+            <p id="llm-summary-status" class="text-xs text-slate-400"></p>
+          </div>
+          <div id="llm-summary-content" class="mt-6 space-y-6 text-sm text-slate-200"></div>
+        </section>
+
+        <section class="flex flex-col gap-4 rounded-3xl border border-dashboard-border/70 bg-dashboard-surface/70 p-6 shadow-xl shadow-black/40 backdrop-blur">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 class="text-xl font-semibold text-white">게시글</h2>
+            <div class="flex flex-wrap items-center gap-3">
+              <p id="summary" class="text-xs text-slate-400"></p>
+              <button
+                id="summarize-button"
+                type="button"
+                class="inline-flex items-center justify-center gap-2 rounded-full border border-dashboard-border/70 bg-slate-900/60 px-4 py-1.5 text-xs font-semibold text-slate-200 transition hover:border-dashboard-accent hover:text-dashboard-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                갤떡요약
+              </button>
+            </div>
+          </div>
+          <div class="overflow-hidden overflow-x-auto rounded-2xl border border-dashboard-border/80">
+            <table id="results-table" class="min-w-full divide-y divide-dashboard-border/80 text-left text-sm">
+              <thead class="bg-slate-900/60 text-xs uppercase tracking-wide text-slate-400">
+                <tr>
+                  <th class="px-4 py-3">글번호</th>
+                  <th class="px-4 py-3">제목</th>
+                  <th class="px-4 py-3">작성자</th>
+                  <th class="px-4 py-3">ID</th>
+                  <th class="px-4 py-3">작성일</th>
+                  <th class="px-4 py-3">조회</th>
+                  <th class="px-4 py-3">추천</th>
+                  <th class="px-4 py-3">삭제</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-dashboard-border/80 bg-slate-950/40"></tbody>
+            </table>
+          </div>
+          <div id="pagination" class="flex justify-center pt-4"></div>
+        </section>
+      </main>
+    </div>
+
+    <template id="result-row-template">
+      <tr class="transition hover:bg-slate-900/60">
+        <td class="post-id whitespace-nowrap px-4 py-3 text-sm font-medium text-slate-200"></td>
+        <td class="post-title max-w-[20rem] truncate px-4 py-3 text-sm text-slate-300"></td>
+        <td class="post-nickname whitespace-nowrap px-4 py-3 text-sm text-slate-300"></td>
+        <td class="post-user-id whitespace-nowrap px-4 py-3 text-xs text-slate-400"></td>
+        <td class="post-created whitespace-nowrap px-4 py-3 text-xs text-slate-400"></td>
+        <td class="post-views whitespace-nowrap px-4 py-3 text-sm text-slate-300"></td>
+        <td class="post-recommends whitespace-nowrap px-4 py-3 text-sm text-slate-300"></td>
+        <td class="post-deleted whitespace-nowrap px-4 py-3 text-xs font-semibold text-rose-400"></td>
+      </tr>
+    </template>
+
+    <script>
+      const PAGE_SIZE = 50;
+      const params = new URLSearchParams(window.location.search);
+      const state = {
+        galleryId: params.get("id") || "",
+        page: Math.max(parseInt(params.get("page") || "1", 10) || 1, 1),
+        search: params.get("search") || "",
+        author: params.get("author") || "",
+        userId: params.get("user_id") || "",
+        deletedOnly: params.get("deleted_only") === "true",
+      };
+
+      const gallerySelect = document.getElementById("gallery-select");
+      const searchInput = document.getElementById("search");
+      const authorInput = document.getElementById("author");
+      const userIdInput = document.getElementById("user-id");
+      const deletedOnlyInput = document.getElementById("deleted-only");
+      const filterForm = document.getElementById("filter-form");
+      const resultsBody = document.querySelector("#results-table tbody");
+      const rowTemplate = document.getElementById("result-row-template");
+      const pagination = document.getElementById("pagination");
+      const summary = document.getElementById("summary");
+      const statusNotice = document.getElementById("status-notice");
+      const summarizeButton = document.getElementById("summarize-button");
+      const llmSummaryPanel = document.getElementById("llm-summary-panel");
+      const llmSummaryStatus = document.getElementById("llm-summary-status");
+      const llmSummaryContent = document.getElementById("llm-summary-content");
+
+      let galleryOptions = [];
+      let hasResults = false;
+
+      initialise();
+
+      async function initialise() {
+        await loadStatuses();
+        syncForm();
+        await loadPosts();
+      }
+
+      async function loadStatuses() {
+        try {
+          const response = await fetch("/api/status");
+          if (!response.ok) {
+            throw new Error(`API error ${response.status}`);
+          }
+          const statuses = await response.json();
+          galleryOptions = statuses;
+          renderGalleryOptions(statuses);
+        } catch (error) {
+          console.error("Failed to load statuses", error);
+          galleryOptions = [];
+          renderGalleryOptions([]);
+          setStatusNotice("갤러리 정보를 불러오지 못했습니다.", "error");
+        }
+      }
+
+      function renderGalleryOptions(statuses) {
+        gallerySelect.innerHTML = "";
+        if (!statuses.length) {
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = "등록된 갤러리가 없습니다";
+          option.disabled = true;
+          gallerySelect.appendChild(option);
+          gallerySelect.disabled = true;
+          state.galleryId = "";
+          return;
+        }
+
+        gallerySelect.disabled = false;
+        statuses.forEach((status) => {
+          const option = document.createElement("option");
+          option.value = status.gallery_id;
+          option.textContent = status.name
+            ? `${status.gallery_id} · ${status.name}`
+            : status.gallery_id;
+          gallerySelect.appendChild(option);
+        });
+
+        if (!state.galleryId || !statuses.some((status) => status.gallery_id === state.galleryId)) {
+          state.galleryId = statuses[0].gallery_id;
+        }
+        gallerySelect.value = state.galleryId;
+      }
+
+      function syncForm() {
+        searchInput.value = state.search;
+        authorInput.value = state.author;
+        userIdInput.value = state.userId;
+        deletedOnlyInput.checked = state.deletedOnly;
+        if (state.galleryId) {
+          gallerySelect.value = state.galleryId;
+        }
+      }
+
+      filterForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        state.search = searchInput.value.trim();
+        state.author = authorInput.value.trim();
+        state.userId = userIdInput.value.trim();
+        state.deletedOnly = deletedOnlyInput.checked;
+        state.page = 1;
+        updateQuery();
+        loadPosts();
+      });
+
+      gallerySelect.addEventListener("change", () => {
+        state.galleryId = gallerySelect.value;
+        state.page = 1;
+        updateQuery();
+        loadPosts();
+      });
+
+      if (summarizeButton) {
+        summarizeButton.addEventListener("click", () => {
+          if (summarizeButton.disabled) {
+            return;
+          }
+          setSummarizeButtonState(true);
+          generateSummary();
+        });
+      }
+
+      async function loadPosts() {
+        resetLLMSummary();
+        hasResults = false;
+        setSummarizeButtonState(true);
+        if (!state.galleryId) {
+          renderEmpty("갤러리를 먼저 선택하세요.");
+          summary.textContent = "";
+          setStatusNotice("갤러리를 선택해 게시글을 살펴보세요.", "info");
+          return;
+        }
+
+        setStatusNotice(`${state.galleryId} 갤러리 게시글을 불러오는 중입니다...`);
+        const query = new URLSearchParams({
+          page: String(state.page),
+          page_size: String(PAGE_SIZE),
+        });
+        if (state.search) query.set("search", state.search);
+        if (state.author) query.set("author", state.author);
+        if (state.userId) query.set("user_id", state.userId);
+        if (state.deletedOnly) query.set("deleted_only", "true");
+
+        resultsBody.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-sm text-slate-400">불러오는 중...</td></tr>`;
+
+        try {
+          const response = await fetch(`/api/galleries/${state.galleryId}/posts?${query.toString()}`);
+          if (!response.ok) {
+            throw new Error(`API error ${response.status}`);
+          }
+          const pageData = await response.json();
+          const totalPages = Math.max(pageData.total_pages ?? 1, 1);
+          const resolvedPage = Math.max(pageData.page ?? state.page, 1);
+          state.page = Math.min(resolvedPage, totalPages);
+          updateQuery();
+          renderPosts(pageData.items || []);
+          hasResults = Boolean(pageData.items?.length);
+          setSummarizeButtonState(!hasResults);
+          renderSummary(pageData.total ?? 0, state.page, totalPages);
+          renderPagination(state.page, totalPages);
+          if (pageData.items?.length) {
+            const totalText = formatNumber(pageData.total ?? 0) || "0";
+            setStatusNotice(`${state.galleryId} 갤러리 게시글 ${totalText}건 중 ${state.page}페이지를 보고 있습니다.`, "success");
+          } else {
+            setStatusNotice("검색 결과가 없습니다.", "info");
+          }
+        } catch (error) {
+          console.error("Failed to load posts", error);
+          renderEmpty("게시글을 불러오지 못했습니다.");
+          renderSummary(0, 1, 1);
+          renderPagination(1, 1);
+          setStatusNotice("게시글을 불러오지 못했습니다.", "error");
+          hasResults = false;
+          setSummarizeButtonState(true);
+        }
+      }
+
+      function renderPosts(items) {
+        resultsBody.innerHTML = "";
+        if (!items.length) {
+          renderEmpty("검색 결과가 없습니다.");
+          return;
+        }
+
+        items.forEach((item) => {
+          const row = rowTemplate.content.firstElementChild.cloneNode(true);
+          row.querySelector(".post-id").textContent = item.post_id ?? "";
+          const titleCell = row.querySelector(".post-title");
+          titleCell.textContent = "";
+          const titleLink = document.createElement("a");
+          titleLink.href = `/view.html?id=${state.galleryId}&no=${item.post_id}`;
+          titleLink.className = "truncate text-emerald-300 hover:text-emerald-200";
+          titleLink.textContent = item.title ?? "";
+          titleCell.appendChild(titleLink);
+          row.querySelector(".post-nickname").textContent = item.nickname ?? "";
+          row.querySelector(".post-user-id").textContent = item.user_id ?? "";
+          row.querySelector(".post-created").textContent = item.created_at ?? "";
+          row.querySelector(".post-views").textContent = formatNumber(item.view_count);
+          row.querySelector(".post-recommends").textContent = formatNumber(item.recommend_count);
+          row.querySelector(".post-deleted").textContent = item.is_deleted ? "삭제" : "";
+          resultsBody.appendChild(row);
+        });
+      }
+
+      function renderSummary(total, page, totalPages) {
+        if (!summary) return;
+        if (!total) {
+          summary.textContent = "표시할 게시글이 없습니다.";
+          return;
+        }
+        summary.textContent = `${total.toLocaleString()}건 · ${page}/${totalPages}페이지`;
+      }
+
+      function renderPagination(page, totalPages) {
+        pagination.innerHTML = "";
+        if (totalPages <= 1) {
+          return;
+        }
+
+        const nav = document.createElement("nav");
+        nav.className = "flex items-center gap-2";
+
+        nav.appendChild(createPageButton("이전", Math.max(page - 1, 1), page === 1));
+
+        const windowSize = 5;
+        let start = Math.max(page - Math.floor(windowSize / 2), 1);
+        let end = start + windowSize - 1;
+        if (end > totalPages) {
+          end = totalPages;
+          start = Math.max(end - windowSize + 1, 1);
+        }
+
+        for (let p = start; p <= end; p += 1) {
+          nav.appendChild(createPageButton(String(p), p, false, p === page));
+        }
+
+        nav.appendChild(createPageButton("다음", Math.min(page + 1, totalPages), page === totalPages));
+
+        pagination.appendChild(nav);
+      }
+
+      function createPageButton(label, targetPage, disabled = false, active = false) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        button.disabled = disabled;
+        button.className = `min-w-[3rem] rounded-full px-3 py-1.5 text-sm font-medium transition ${
+          active
+            ? "bg-dashboard-accent text-slate-900 shadow-glow"
+            : "border border-dashboard-border/70 bg-slate-950/70 text-slate-200 hover:border-dashboard-accent"
+        } ${disabled && !active ? "opacity-50" : ""}`;
+        if (!disabled || active) {
+          button.addEventListener("click", () => {
+            if (active) return;
+            state.page = targetPage;
+            updateQuery();
+            loadPosts();
+          });
+        }
+        return button;
+      }
+
+      function renderEmpty(message) {
+        resultsBody.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-sm text-slate-400">${message}</td></tr>`;
+      }
+
+      function setStatusNotice(message, variant = "info") {
+        if (!statusNotice) return;
+        statusNotice.textContent = message;
+        statusNotice.classList.remove("text-slate-400", "text-emerald-300", "text-rose-300");
+        const className =
+          variant === "success"
+            ? "text-emerald-300"
+            : variant === "error"
+            ? "text-rose-300"
+            : "text-slate-400";
+        statusNotice.classList.add(className);
+      }
+
+      function setSummarizeButtonState(disabled) {
+        if (!summarizeButton) return;
+        summarizeButton.disabled = disabled;
+        summarizeButton.classList.toggle("opacity-60", disabled);
+        summarizeButton.classList.toggle("cursor-not-allowed", disabled);
+      }
+
+      function resetLLMSummary() {
+        if (llmSummaryPanel) {
+          llmSummaryPanel.classList.add("hidden");
+        }
+        if (llmSummaryContent) {
+          llmSummaryContent.innerHTML = "";
+        }
+        if (llmSummaryStatus) {
+          llmSummaryStatus.textContent = "";
+          llmSummaryStatus.classList.remove("text-emerald-300", "text-rose-300");
+          llmSummaryStatus.classList.add("text-slate-400");
+        }
+      }
+
+      function showLLMSummarySkeleton() {
+        if (!llmSummaryPanel || !llmSummaryContent) return;
+        llmSummaryPanel.classList.remove("hidden");
+        llmSummaryContent.innerHTML = "";
+
+        const wrapper = document.createElement("div");
+        wrapper.className = "space-y-4";
+
+        const card = document.createElement("div");
+        card.className =
+          "animate-pulse space-y-3 rounded-2xl border border-dashboard-border/60 bg-slate-900/50 p-4";
+
+        const header = document.createElement("div");
+        header.className = "h-3 w-20 rounded bg-slate-700/60";
+        card.appendChild(header);
+
+        const widths = ["w-4/5", "w-full", "w-3/5"];
+        widths.forEach((widthClass, index) => {
+          const line = document.createElement("div");
+          line.className = `h-3 rounded bg-slate-800/50 ${widthClass}`;
+          if (index === 0) {
+            line.classList.add("mt-2");
+          }
+          card.appendChild(line);
+        });
+
+        wrapper.appendChild(card);
+
+        llmSummaryContent.appendChild(wrapper);
+      }
+
+      function setLLMSummaryStatus(message, variant = "info") {
+        if (!llmSummaryStatus) return;
+        llmSummaryStatus.textContent = message;
+        llmSummaryStatus.classList.remove("text-slate-400", "text-emerald-300", "text-rose-300");
+        const className =
+          variant === "success"
+            ? "text-emerald-300"
+            : variant === "error"
+            ? "text-rose-300"
+            : "text-slate-400";
+        llmSummaryStatus.classList.add(className);
+      }
+
+      function renderLLMSummary(result) {
+        if (!llmSummaryPanel || !llmSummaryContent) return;
+        llmSummaryPanel.classList.remove("hidden");
+        llmSummaryContent.innerHTML = "";
+
+        const summaryText = toText(result?.summary);
+        const rawText = toText(result?.raw);
+
+        if (summaryText) {
+          const block = document.createElement("div");
+          block.className =
+            "space-y-3 rounded-2xl border border-dashboard-border/60 bg-slate-950/60 p-4";
+          const label = document.createElement("p");
+          label.className = "text-xs uppercase tracking-wide text-slate-400";
+          label.textContent = "요약";
+          const body = document.createElement("p");
+          body.className = "leading-relaxed";
+          body.textContent = summaryText;
+          block.appendChild(label);
+          block.appendChild(body);
+          llmSummaryContent.appendChild(block);
+        } else if (rawText) {
+          const message = document.createElement("p");
+          message.className =
+            "rounded-2xl border border-dashboard-border/60 bg-slate-950/60 p-4 text-sm text-slate-300";
+          message.textContent = "요약 결과를 불러오지 못했습니다. 전체 응답을 확인하세요.";
+          llmSummaryContent.appendChild(message);
+        } else {
+          const empty = document.createElement("p");
+          empty.className =
+            "rounded-2xl border border-dashboard-border/60 bg-slate-950/60 p-4 text-sm text-slate-300";
+          empty.textContent = "표시할 요약 정보가 없습니다.";
+          llmSummaryContent.appendChild(empty);
+        }
+
+        if (rawText && rawText !== summaryText) {
+          const block = document.createElement("pre");
+          block.className =
+            "mt-3 whitespace-pre-wrap rounded-2xl border border-dashboard-border/60 bg-slate-950/60 p-4 text-xs text-slate-300";
+          block.textContent = rawText;
+          llmSummaryContent.appendChild(block);
+        }
+      }
+
+      function toText(value) {
+        if (value === null || value === undefined) {
+          return "";
+        }
+        if (typeof value === "string") {
+          return value.trim();
+        }
+        return String(value).trim();
+      }
+
+      function displayLLMError(message) {
+        if (!llmSummaryPanel || !llmSummaryContent) return;
+        llmSummaryPanel.classList.remove("hidden");
+        llmSummaryContent.innerHTML = "";
+        const errorMessage = document.createElement("p");
+        errorMessage.className =
+          "rounded-2xl border border-dashboard-border/60 bg-rose-950/30 p-4 text-sm text-rose-300";
+        errorMessage.textContent = message;
+        llmSummaryContent.appendChild(errorMessage);
+      }
+
+      async function generateSummary() {
+        if (!state.galleryId) {
+          setStatusNotice("갤러리를 먼저 선택하세요.", "error");
+          return;
+        }
+        resetLLMSummary();
+        setSummarizeButtonState(true);
+        showLLMSummarySkeleton();
+        setLLMSummaryStatus("요약을 생성하는 중입니다...", "info");
+
+        try {
+          const response = await fetch(
+            `/api/galleries/${encodeURIComponent(state.galleryId)}/llm-summary`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                search: state.search || null,
+                author: state.author || null,
+                user_id: state.userId || null,
+                deleted_only: state.deletedOnly,
+              }),
+            }
+          );
+          if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            const message = error?.detail ?? `API 오류 ${response.status}`;
+            throw new Error(message);
+          }
+          const result = await response.json();
+          setLLMSummaryStatus(
+            `총 ${Number(result.post_count ?? 0).toLocaleString()}건 분석`,
+            "success"
+          );
+          renderLLMSummary(result);
+        } catch (error) {
+          console.error("Failed to generate summary", error);
+          displayLLMError(error?.message ?? "요약 생성에 실패했습니다.");
+          setLLMSummaryStatus("요약 생성에 실패했습니다.", "error");
+        } finally {
+          setSummarizeButtonState(!hasResults);
+        }
+      }
+
+      function updateQuery() {
+        const url = new URL(window.location.href);
+        if (state.galleryId) {
+          url.searchParams.set("id", state.galleryId);
+        } else {
+          url.searchParams.delete("id");
+        }
+        url.searchParams.set("page", String(state.page));
+        if (state.search) url.searchParams.set("search", state.search);
+        else url.searchParams.delete("search");
+        if (state.author) url.searchParams.set("author", state.author);
+        else url.searchParams.delete("author");
+        if (state.userId) url.searchParams.set("user_id", state.userId);
+        else url.searchParams.delete("user_id");
+        if (state.deletedOnly) url.searchParams.set("deleted_only", "true");
+        else url.searchParams.delete("deleted_only");
+        history.replaceState(null, "", url);
+      }
+
+      function formatNumber(value) {
+        if (typeof value !== "number") {
+          return value ?? "";
+        }
+        return value.toLocaleString();
+      }
+    </script>
+  </body>
+</html>

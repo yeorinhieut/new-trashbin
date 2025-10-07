@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="ko" class="h-full bg-slate-950">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>게시글 보기 · Trashbin</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              dashboard: {
+                surface: "#0f172a",
+                border: "#1f2a44",
+                accent: "#34d399",
+              },
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="min-h-full bg-slate-950 text-slate-100">
+    <div class="mx-auto flex min-h-screen max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+      <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-white sm:text-4xl">게시글 보기</h1>
+          <p id="status-text" class="mt-2 text-sm text-slate-400">
+            갤러리 ID와 글번호를 입력하면 게시글을 불러옵니다.
+          </p>
+        </div>
+        <div class="flex flex-col items-end gap-2">
+          <div class="flex gap-3">
+            <button
+              id="recrawl-post"
+              type="button"
+              class="inline-flex items-center justify-center rounded-2xl border border-dashboard-border/70 bg-dashboard-surface/60 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-dashboard-accent hover:text-dashboard-accent"
+            >
+              재수집
+            </button>
+            <a
+              href="/"
+              class="inline-flex items-center justify-center rounded-2xl border border-dashboard-border/70 bg-dashboard-surface/60 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-dashboard-accent hover:text-dashboard-accent"
+            >
+              대시보드로 돌아가기
+            </a>
+          </div>
+          <p id="recrawl-message" class="text-xs text-slate-400"></p>
+        </div>
+      </header>
+
+      <main class="flex flex-1 flex-col gap-8 pb-16">
+        <section class="rounded-3xl border border-dashboard-border/70 bg-dashboard-surface/70 p-6 shadow-xl shadow-black/40 backdrop-blur">
+          <div class="flex flex-col gap-4">
+            <div>
+              <h2 id="post-title" class="text-2xl font-semibold text-white">게시글 제목</h2>
+              <dl id="post-meta" class="mt-4 grid gap-2 text-sm text-slate-300 sm:grid-cols-2"></dl>
+            </div>
+            <article
+              id="post-content"
+              class="min-h-[12rem] whitespace-pre-wrap rounded-2xl border border-dashboard-border/60 bg-slate-950/70 p-5 text-sm leading-relaxed text-slate-200 shadow-inner shadow-black/30"
+            ></article>
+          </div>
+        </section>
+
+        <section class="rounded-3xl border border-dashboard-border/70 bg-dashboard-surface/70 p-6 shadow-xl shadow-black/40 backdrop-blur">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-semibold text-white">댓글</h3>
+          </div>
+          <div id="comment-list" class="mt-4 flex flex-col gap-4"></div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const galleryId = params.get("id");
+      const postId = params.get("no");
+
+      const statusText = document.getElementById("status-text");
+      const postTitle = document.getElementById("post-title");
+      const postMeta = document.getElementById("post-meta");
+      const postContent = document.getElementById("post-content");
+      const commentList = document.getElementById("comment-list");
+      const recrawlButton = document.getElementById("recrawl-post");
+      const recrawlMessage = document.getElementById("recrawl-message");
+
+      function setRecrawlMessage(message, variant = "info") {
+        if (!recrawlMessage) return;
+        recrawlMessage.textContent = message;
+        recrawlMessage.classList.remove("text-emerald-300", "text-rose-300", "text-slate-400");
+        const className =
+          variant === "success"
+            ? "text-emerald-300"
+            : variant === "error"
+            ? "text-rose-300"
+            : "text-slate-400";
+        recrawlMessage.classList.add(className);
+      }
+
+      if (!galleryId || !postId) {
+        statusText.textContent = "URL 쿼리스트링에 id와 no 값을 전달해주세요. 예: view.html?id=gallery&no=1234";
+        if (recrawlButton instanceof HTMLButtonElement) {
+          recrawlButton.disabled = true;
+          recrawlButton.classList.add("opacity-60", "cursor-not-allowed");
+        }
+      } else {
+        loadPost();
+      }
+
+      if (recrawlButton instanceof HTMLButtonElement && galleryId && postId) {
+        recrawlButton.addEventListener("click", async () => {
+          if (recrawlButton.disabled) return;
+          recrawlButton.disabled = true;
+          recrawlButton.classList.add("opacity-60", "cursor-not-allowed");
+          setRecrawlMessage("재수집 중입니다...", "info");
+          try {
+            const response = await fetch(
+              `/api/galleries/${galleryId}/posts/${postId}/recrawl`,
+              { method: "POST" }
+            );
+            if (!response.ok) {
+              const error = await response.json().catch(() => ({}));
+              const message = error?.detail ?? `API error ${response.status}`;
+              throw new Error(message);
+            }
+            setRecrawlMessage("재수집이 완료되었습니다.", "success");
+            await loadPost();
+          } catch (error) {
+            console.error("Failed to recrawl post", error);
+            setRecrawlMessage("재수집에 실패했습니다.", "error");
+          } finally {
+            if (recrawlButton.disabled) {
+              recrawlButton.disabled = false;
+              recrawlButton.classList.remove("opacity-60", "cursor-not-allowed");
+            }
+          }
+        });
+      }
+
+      async function loadPost() {
+        statusText.textContent = `${galleryId} / ${postId} 게시글을 불러오는 중입니다...`;
+        if (recrawlButton instanceof HTMLButtonElement) {
+          recrawlButton.disabled = true;
+          recrawlButton.classList.add("opacity-60", "cursor-not-allowed");
+        }
+        setRecrawlMessage("");
+        try {
+          const response = await fetch(`/api/galleries/${galleryId}/posts/${postId}`);
+          if (!response.ok) {
+            throw new Error(`API error ${response.status}`);
+          }
+          const post = await response.json();
+          renderPost(post);
+          statusText.textContent = `${galleryId} / ${postId} 게시글`;
+          if (recrawlButton instanceof HTMLButtonElement) {
+            recrawlButton.disabled = false;
+            recrawlButton.classList.remove("opacity-60", "cursor-not-allowed");
+          }
+          setRecrawlMessage("");
+        } catch (error) {
+          console.error("Failed to load post", error);
+          statusText.textContent = "게시글을 불러오지 못했습니다. 존재하지 않는 글이거나 삭제되었을 수 있습니다.";
+          setRecrawlMessage("게시글을 불러오지 못했습니다.", "error");
+        }
+      }
+
+      function renderPost(post) {
+        postTitle.textContent = post.title ?? "제목 없음";
+
+        const metaItems = [
+          ["갤러리", galleryId],
+          ["글번호", post.post_id ?? postId],
+          ["작성자", formatAuthor(post)],
+          ["작성일", post.created_at ?? "-"],
+          ["조회", formatNumber(post.view_count)],
+          ["추천", formatNumber(post.recommend_count)],
+          ["비추천", formatNumber(post.dislike_count)],
+          ["삭제 여부", post.is_deleted ? "삭제됨" : "정상"],
+        ];
+        postMeta.innerHTML = "";
+        metaItems.forEach(([label, value]) => {
+          const item = document.createElement("div");
+          item.className = "flex justify-between gap-4 rounded-xl border border-dashboard-border/50 bg-slate-950/50 px-4 py-3";
+
+          const term = document.createElement("dt");
+          term.className = "text-xs font-semibold uppercase tracking-wide text-slate-400";
+          term.textContent = label;
+          const desc = document.createElement("dd");
+          desc.className = "text-sm text-slate-100";
+          desc.textContent = value ?? "-";
+
+          item.appendChild(term);
+          item.appendChild(desc);
+          postMeta.appendChild(item);
+        });
+
+        renderPostContent(post);
+        renderComments(post.comments ?? []);
+      }
+
+      function formatAuthor(post) {
+        const nickname = post.nickname ?? "익명";
+        const userId = post.user_id ? ` (${post.user_id})` : "";
+        const ip = post.ip ? ` / ${post.ip}` : "";
+        return `${nickname}${userId}${ip}`;
+      }
+
+      function formatNumber(value) {
+        if (typeof value !== "number") return value ?? "0";
+        return value.toLocaleString();
+      }
+
+      function renderPostContent(post) {
+        postContent.innerHTML = "";
+        const content = post.content == null ? "" : String(post.content);
+        const images = Array.isArray(post.images) ? post.images : [];
+        const usedImages = new Set();
+        const pattern = /\[image\((\d+)\)\]/gi;
+        let lastIndex = 0;
+        let match;
+
+        while ((match = pattern.exec(content)) !== null) {
+          if (match.index > lastIndex) {
+            appendPostText(content.slice(lastIndex, match.index));
+          }
+
+          const index = Number.parseInt(match[1], 10);
+          appendPostImage(images, index, usedImages);
+
+          lastIndex = pattern.lastIndex;
+        }
+
+        if (lastIndex < content.length) {
+          appendPostText(content.slice(lastIndex));
+        }
+
+        appendRemainingImages(images, usedImages);
+      }
+
+      function appendPostText(text) {
+        if (!text) {
+          return;
+        }
+        postContent.appendChild(document.createTextNode(text));
+      }
+
+      function appendPostImage(images, index, usedImages) {
+        if (Number.isNaN(index) || index < 0 || index >= images.length) {
+          return;
+        }
+        if (usedImages?.has(index)) {
+          return;
+        }
+        const image = images[index];
+        if (!image?.data) {
+          return;
+        }
+        usedImages?.add(index);
+        ensurePostContentLineBreak();
+        const figure = document.createElement("figure");
+        figure.className = "my-4 flex flex-col gap-2";
+
+        const img = document.createElement("img");
+        img.className = "max-h-[30rem] w-full rounded-2xl border border-dashboard-border/60 bg-slate-950/60 object-contain";
+        const mime = image.content_type || "image/jpeg";
+        img.src = `data:${mime};base64,${image.data}`;
+        img.alt = image.description || `본문 이미지 ${index + 1}`;
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.referrerPolicy = "no-referrer";
+        figure.appendChild(img);
+
+        if (image.url) {
+          const caption = document.createElement("figcaption");
+          caption.className = "text-xs text-slate-400";
+          const link = document.createElement("a");
+          link.href = image.url;
+          link.target = "_blank";
+          link.rel = "noreferrer noopener";
+          link.className = "text-dashboard-accent hover:text-emerald-300";
+          link.textContent = "원본 보기";
+          caption.appendChild(link);
+          figure.appendChild(caption);
+        }
+
+        postContent.appendChild(figure);
+        postContent.appendChild(document.createTextNode("\n"));
+      }
+
+      function appendRemainingImages(images, usedImages) {
+        images.forEach((image, index) => {
+          if (!image?.data) {
+            return;
+          }
+          if (usedImages?.has(index)) {
+            return;
+          }
+          appendPostImage(images, index, usedImages);
+        });
+      }
+
+      function ensurePostContentLineBreak() {
+        const lastNode = postContent.lastChild;
+        if (!lastNode) {
+          return;
+        }
+        if (lastNode.nodeType === Node.TEXT_NODE) {
+          if (!lastNode.textContent.endsWith("\n")) {
+            lastNode.textContent += "\n";
+          }
+          return;
+        }
+        postContent.appendChild(document.createTextNode("\n"));
+      }
+
+      function renderComments(comments) {
+        commentList.innerHTML = "";
+        const structured = buildCommentTree(comments);
+        if (!structured.length) {
+          const empty = document.createElement("div");
+          empty.className = "rounded-2xl border border-dashboard-border/60 bg-slate-950/60 p-6 text-sm text-slate-400";
+          empty.textContent = "저장된 댓글이 없습니다.";
+          commentList.appendChild(empty);
+          return;
+        }
+
+        const fragment = document.createDocumentFragment();
+        structured.forEach((comment) => {
+          fragment.appendChild(renderCommentThread(comment, 0));
+        });
+        commentList.appendChild(fragment);
+      }
+
+      function buildCommentTree(comments) {
+        if (!Array.isArray(comments) || comments.length === 0) {
+          return [];
+        }
+
+        const hasReplies = comments.some(
+          (comment) => Array.isArray(comment?.replies) && comment.replies.length,
+        );
+        if (hasReplies) {
+          return comments.map((comment) => cloneComment(comment));
+        }
+
+        const map = new Map();
+        const ordered = comments.map((comment) => {
+          const clone = cloneComment(comment);
+          const key = commentKey(clone);
+          if (key) {
+            map.set(key, clone);
+          }
+          return clone;
+        });
+
+        const roots = [];
+        ordered.forEach((comment) => {
+          const parentId = normalizeParentId(comment.parent_id);
+          if (!parentId) {
+            roots.push(comment);
+            return;
+          }
+          const parent = map.get(parentId);
+          if (parent) {
+            parent.replies.push(comment);
+          } else {
+            roots.push(comment);
+          }
+        });
+        return roots;
+      }
+
+      function renderCommentThread(comment, depth) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "flex flex-col gap-2";
+
+        const card = createCommentCard(comment, depth);
+        wrapper.appendChild(card);
+
+        const replies = Array.isArray(comment.replies) ? comment.replies : [];
+        if (replies.length) {
+          const repliesContainer = document.createElement("div");
+          repliesContainer.className =
+            "ml-5 flex flex-col gap-2 border-l border-dashboard-border/60 pl-4";
+          replies.forEach((reply) => {
+            repliesContainer.appendChild(renderCommentThread(reply, depth + 1));
+          });
+          wrapper.appendChild(repliesContainer);
+        }
+
+        return wrapper;
+      }
+
+      function createCommentCard(comment, depth) {
+        const card = document.createElement("article");
+        card.className =
+          "flex flex-col gap-3 rounded-2xl border border-dashboard-border/60 bg-slate-950/70 p-4 shadow-inner shadow-black/30";
+        if (depth > 0) {
+          card.classList.remove("bg-slate-950/70");
+          card.classList.add("bg-slate-950/60");
+        }
+
+        const header = document.createElement("div");
+        header.className = "flex flex-wrap items-center gap-2 text-sm text-slate-300";
+        const commentId = comment.comment_id ?? comment.id;
+        if (commentId) {
+          const idBadge = document.createElement("span");
+          idBadge.className = "rounded-full bg-slate-900/60 px-3 py-1 text-xs font-semibold text-slate-300";
+          idBadge.textContent = `#${commentId}`;
+          header.appendChild(idBadge);
+        }
+
+        const author = document.createElement("span");
+        author.className = "font-medium text-white";
+        author.textContent = comment.nickname ?? "익명";
+        header.appendChild(author);
+
+        if (comment.user_id) {
+          const id = document.createElement("span");
+          id.className = "text-xs text-slate-400";
+          id.textContent = `(${comment.user_id})`;
+          header.appendChild(id);
+        }
+
+        if (comment.ip) {
+          const ip = document.createElement("span");
+          ip.className = "text-xs text-slate-400";
+          ip.textContent = comment.ip;
+          header.appendChild(ip);
+        }
+
+        const created = document.createElement("span");
+        created.className = "text-xs text-slate-400";
+        created.textContent = comment.created_at ?? "";
+        header.appendChild(created);
+
+        if (comment.is_deleted) {
+          const badge = document.createElement("span");
+          badge.className = "rounded-full bg-rose-500/20 px-3 py-1 text-xs font-semibold text-rose-200";
+          badge.textContent = "삭제됨";
+          header.appendChild(badge);
+        }
+
+        card.appendChild(header);
+
+        const body = renderCommentBody(comment);
+        card.appendChild(body);
+
+        return card;
+      }
+
+      function renderCommentBody(comment) {
+        const container = document.createElement("div");
+        container.className =
+          "whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-200";
+
+        const content = comment.content == null ? "" : String(comment.content);
+        const dccons = Array.isArray(comment.dccons) ? comment.dccons : [];
+        appendCommentContent(container, content, dccons);
+
+        return container;
+      }
+
+      function appendCommentContent(target, content, dccons) {
+        const pattern = /\[dccon\((\d+)\)(?::[^\]]*)?\]/gi;
+        let lastIndex = 0;
+        let match;
+        let foundPlaceholder = false;
+
+        while ((match = pattern.exec(content)) !== null) {
+          foundPlaceholder = true;
+          if (match.index > lastIndex) {
+            appendTextNode(target, content.slice(lastIndex, match.index));
+          }
+
+          const index = Number.parseInt(match[1], 10);
+          const url = dccons[index];
+          if (url) {
+            target.appendChild(createDcconBadge(url, index));
+          }
+
+          lastIndex = pattern.lastIndex;
+        }
+
+        if (lastIndex < content.length) {
+          appendTextNode(target, content.slice(lastIndex));
+        }
+
+        if (!foundPlaceholder) {
+          dccons.forEach((url, index) => {
+            if (!url) {
+              return;
+            }
+            if (target.childNodes.length) {
+              target.appendChild(document.createTextNode("\n"));
+            }
+            target.appendChild(createDcconBadge(url, index));
+          });
+        }
+      }
+
+      function appendTextNode(target, text) {
+        if (!text) {
+          return;
+        }
+        target.appendChild(document.createTextNode(text));
+      }
+
+      function createDcconBadge(url, index) {
+        const link = document.createElement("a");
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noreferrer noopener";
+        link.textContent = "디시콘";
+        link.className =
+          "mr-1 inline-flex items-center gap-1 rounded-full border border-dashboard-border/60 bg-slate-900/60 px-2 py-1 text-xs font-semibold text-emerald-200";
+        link.setAttribute("aria-label", `디시콘 ${index + 1}`);
+        return link;
+      }
+
+      function cloneComment(comment) {
+        const copy = {
+          ...comment,
+          dccons: Array.isArray(comment?.dccons) ? [...comment.dccons] : [],
+        };
+        const replies = Array.isArray(comment?.replies) ? comment.replies : [];
+        copy.replies = replies.map((reply) => cloneComment(reply));
+        return copy;
+      }
+
+      function normalizeParentId(value) {
+        if (value === null || value === undefined) {
+          return "";
+        }
+        const text = String(value).trim();
+        return text && text !== "0" ? text : "";
+      }
+
+      function commentKey(comment) {
+        const id = comment.comment_id ?? comment.id;
+        if (id === null || id === undefined) {
+          return "";
+        }
+        return String(id).trim();
+      }
+    </script>
+  </body>
+</html>

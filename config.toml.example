@@ -1,0 +1,44 @@
+[archive]
+base_url = "https://m.dcinside.com"
+user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+[comments]
+max_pages = 5
+page_size = 100
+delay = 0.5
+
+[[galleries]]
+id = "sff"
+name = "SFF"
+delay = 30.0
+fetch_delay = 1.5
+pages = 1
+followup_delays = [60.0, 300.0, 1800.0]
+auto_start = true
+max_comment_pages = 5
+comment_page_size = 100
+comment_delay = 0.5
+comment_followup_delay = 1800.0
+comment_followup_threshold = 300.0
+comment_followup_max_retries = 3
+
+[[galleries]]
+id = "svr"
+name = "서버"
+delay = 60.0
+fetch_delay = 1.5
+pages = 1
+followup_delays = [300.0, 3600.0]
+auto_start = true
+max_comment_pages = 5
+comment_page_size = 100
+comment_delay = 0.5
+comment_followup_delay = 1800.0
+comment_followup_threshold = 300.0
+comment_followup_max_retries = 3
+
+
+[llm]
+api_key = ""
+model = "gpt-5-mini"
+summary_prompt = "다음은 최신 게시글 목록입니다. 각 게시글의 분위기와 공통된 주제를 분석하고 중요한 포인트를 정리해주세요."
