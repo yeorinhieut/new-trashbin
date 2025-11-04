@@ -227,12 +227,14 @@ class DCInsideClient:
         *,
         page: int = 1,
         board_type: str = "all",
+        path: str = "board",
     ) -> list[PostSummary]:
         if page <= 0:
             return []
 
         query = "recommend=1" if board_type == "recommend" else f"page={page}"
-        url = f"{self.base_url}/board/{quote(gallery_id, safe='')}?{query}"
+        prefix = "mini" if path == "mini" else "board"
+        url = f"{self.base_url}/{prefix}/{quote(gallery_id, safe='')}?{query}"
         response = await self._client.get(url, headers={"Cookie": "list_count=100"})
         if response.status_code == 429:
             LOGGER.warning("Rate limited while fetching board %s page %s", gallery_id, page)
@@ -242,7 +244,14 @@ class DCInsideClient:
         soup = BeautifulSoup(response.text, "html.parser")
         posts: list[PostSummary] = []
 
-        for row in soup.select("ul.gall-detail-lst > li"):
+        rows: list[Tag] = list(soup.select("ul.gall-detail-lst > li"))
+        if not rows:
+            for inner in soup.select("li > div.gall-detail-lnktb"):
+                parent = inner.parent if isinstance(inner, Tag) else None
+                if parent and parent.name == "li":
+                    rows.append(parent)
+
+        for row in rows:
             if row.select_one(".pwlink") or row.select_one(".power-lst"):
                 continue
 
@@ -252,11 +261,13 @@ class DCInsideClient:
             if board_type != "notice" and "notice" in classes:
                 continue
 
-            anchor = row.select_one("a")
+            # Prefer the main left anchor for mini markup; fall back to first anchor.
+            anchor = row.select_one("div.gall-detail-lnktb > a.lt") or row.select_one("a")
             if not anchor:
                 continue
             href = anchor.get("href") or ""
-            match = re.search(r"/(\d+)(?:\?|$)", href)
+            # Extract post id at end of path; allow hash or query suffixes.
+            match = re.search(r"/(\d+)(?:[?#]|$)", href)
             if not match:
                 continue
             post_id = match.group(1)
@@ -273,15 +284,19 @@ class DCInsideClient:
                 icon_key = next((cls for cls in icon["class"] if cls.startswith("sp-lst-")), None)
             post_type = type_map.get(icon_key or "", "unknown")
 
-            subject_el = row.select_one(".ginfo > li:nth-of-type(1)")
-            date_el = row.select_one(".ginfo > li:nth-of-type(2)")
-            view_el = row.select_one(".ginfo > li:nth-of-type(3)")
-            recommend_el = row.select_one(".ginfo > li:nth-of-type(4)")
-
-            subject = subject_el.get_text(strip=True) if subject_el else ""
-            created_at = _normalize_board_datetime(date_el.get_text(strip=True) if date_el else "")
-            view_count = _extract_number(view_el.get_text(strip=True) if view_el else "0")
-            recommend_count = _extract_number(recommend_el.get_text(strip=True) if recommend_el else "0")
+            ginfo_items = row.select(".ginfo > li")
+            subject = ginfo_items[0].get_text(strip=True) if ginfo_items else ""
+            created_at_text = ""
+            for item in ginfo_items[1:]:
+                text = item.get_text(strip=True)
+                if re.search(r"\d{2}:\d{2}|\d{2}\.\d{2}|\d{4}\.\d{2}\.\d{2}", text):
+                    created_at_text = text
+                    break
+            created_at = _normalize_board_datetime(created_at_text)
+            view_text = next((it.get_text(strip=True) for it in ginfo_items if "조회" in it.get_text()), "0")
+            recommend_text = next((it.get_text(strip=True) for it in ginfo_items if "추천" in it.get_text()), "0")
+            view_count = _extract_number(view_text)
+            recommend_count = _extract_number(recommend_text)
 
             block = row.select_one(".blockInfo")
             nickname = block.get("data-name") if block and block.get("data-name") else "익명"
@@ -347,9 +362,10 @@ class DCInsideClient:
         max_comment_pages: int = 1,
         comment_page_size: int = 100,
         comment_delay: float = 0.0,
+        path: str = "board",
     ) -> Optional[PostDetail]:
         del max_comment_pages, comment_page_size, comment_delay
-        html = await self._get_mobile_post_html(gallery_id, post_id)
+        html = await self._get_mobile_post_html(gallery_id, post_id, path=path)
         soup = BeautifulSoup(html, "html.parser")
         detail = self._parse_mobile_post(
             soup,
@@ -370,17 +386,19 @@ class DCInsideClient:
         max_pages: int = 1,
         page_size: int = 100,
         delay: float = 0.0,
+        path: str = "board",
     ) -> Sequence[Comment]:
         del max_pages, page_size, delay
-        html = await self._get_mobile_post_html(gallery_id, post_id)
+        html = await self._get_mobile_post_html(gallery_id, post_id, path=path)
         soup = BeautifulSoup(html, "html.parser")
         return self._parse_mobile_comments(soup)
 
-    async def _get_mobile_post_html(self, gallery_id: str, post_id: str | int) -> str:
+    async def _get_mobile_post_html(self, gallery_id: str, post_id: str | int, *, path: str = "board") -> str:
         post_no = str(post_id)
         if not post_no:
             raise ValueError("post_id is required")
-        url = f"{self.base_url}/board/{quote(gallery_id, safe='')}/{quote(post_no, safe='')}"
+        prefix = "mini" if path == "mini" else "board"
+        url = f"{self.base_url}/{prefix}/{quote(gallery_id, safe='')}/{quote(post_no, safe='')}"
         response = await self._client.get(url, headers=self._html_headers)
         if response.status_code == 429:
             LOGGER.warning("Rate limited while fetching post %s/%s", gallery_id, post_no)

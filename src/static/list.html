@@ -527,9 +527,24 @@
           const label = document.createElement("p");
           label.className = "text-xs uppercase tracking-wide text-slate-400";
           label.textContent = "요약";
-          const body = document.createElement("p");
-          body.className = "leading-relaxed";
-          body.textContent = summaryText;
+          const body = document.createElement("div");
+          body.className = "space-y-2 leading-relaxed";
+          summaryText
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0)
+            .forEach((line) => {
+              const paragraph = document.createElement("p");
+              paragraph.className = "whitespace-pre-wrap break-words";
+              paragraph.textContent = line;
+              body.appendChild(paragraph);
+            });
+          if (!body.childElementCount) {
+            const paragraph = document.createElement("p");
+            paragraph.className = "whitespace-pre-wrap break-words";
+            paragraph.textContent = summaryText.trim();
+            body.appendChild(paragraph);
+          }
           block.appendChild(label);
           block.appendChild(body);
           llmSummaryContent.appendChild(block);

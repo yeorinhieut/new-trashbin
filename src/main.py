@@ -148,6 +148,7 @@ class SummaryResponseModel(BaseModel):
 class CreateGalleryRequest(BaseModel):
     id: str = Field(..., description="DCInside gallery identifier")
     name: Optional[str] = Field(default=None, description="Friendly name")
+    mini: bool = Field(default=False, description="Use mini gallery endpoints")
     delay: float = Field(default=30.0, ge=1.0)
     fetch_delay: float = Field(default=1.0, ge=0.0)
     pages: int = Field(default=1, ge=1, le=10)
@@ -165,6 +166,7 @@ class CreateGalleryRequest(BaseModel):
 
 class UpdateGalleryRequest(BaseModel):
     name: Optional[str] = Field(default=None)
+    mini: Optional[bool] = Field(default=None)
     delay: Optional[float] = Field(default=None, ge=1.0)
     fetch_delay: Optional[float] = Field(default=None, ge=0.0)
     pages: Optional[int] = Field(default=None, ge=1, le=10)

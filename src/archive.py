@@ -37,6 +37,8 @@ DEFAULT_CONFIG_PATH = Path("config.toml")
 class GallerySettings(BaseModel):
     id: str
     name: Optional[str] = None
+    # If true, use /mini/{id} endpoints instead of /board/{id}
+    mini: bool = False
     delay: float = Field(default=30.0, ge=1.0)
     fetch_delay: float = Field(default=1.0, ge=0.0)
     pages: int = Field(default=1, ge=1, le=10)
@@ -48,12 +50,15 @@ class GallerySettings(BaseModel):
     comment_followup_delay: float = Field(default=1800.0, ge=0.0)
     comment_followup_threshold: float = Field(default=300.0, ge=0.0)
     comment_followup_max_retries: int = Field(default=3, ge=0)
+    # Ignore unknown keys (e.g., legacy 'kind')
+    model_config = ConfigDict(extra="ignore")
 
     @field_validator("followup_delays", mode="before")
     @classmethod
     def _ensure_sorted(cls, value: Iterable[float]) -> List[float]:
         delays = [float(v) for v in value]
         return sorted(delays)
+
 
 
 class ArchiveOptions(BaseModel):
@@ -127,6 +132,8 @@ class ArchiveConfig:
             entry["id"] = gallery.id
             if gallery.name:
                 entry["name"] = gallery.name
+            if getattr(gallery, "mini", False):
+                entry["mini"] = True
             entry["delay"] = gallery.delay
             entry["fetch_delay"] = gallery.fetch_delay
             entry["pages"] = gallery.pages
@@ -370,6 +377,7 @@ class GalleryArchiver:
                 summaries = await self.manager.client.fetch_board_page(
                     self.settings.id,
                     page=1,
+                    path=("mini" if getattr(self.settings, "mini", False) else "board"),
                 )
             except RateLimitedError as exc:
                 self.last_error = str(exc)
@@ -632,6 +640,7 @@ class GalleryArchiver:
                 max_comment_pages=self.settings.max_comment_pages,
                 comment_page_size=self.settings.comment_page_size,
                 comment_delay=self.settings.comment_delay,
+                path=("mini" if getattr(self.settings, "mini", False) else "board"),
             )
         except PostDeletedError as exc:
             LOGGER.info("Skipping removed post %s/%s: %s", summary.gallery_id, summary.post_id, exc)
@@ -844,6 +853,7 @@ class GalleryArchiver:
                     max_comment_pages=self.settings.max_comment_pages,
                     comment_page_size=self.settings.comment_page_size,
                     comment_delay=self.settings.comment_delay,
+                    path=("mini" if getattr(self.settings, "mini", False) else "board"),
                 )
                 images: list[DownloadedImage] = []
                 if detail:
@@ -1362,4 +1372,3 @@ __all__ = [
     "QueueSnapshotItem",
     "LLMOptions",
 ]
-

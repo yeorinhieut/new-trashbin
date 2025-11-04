@@ -25,6 +25,7 @@ comment_followup_max_retries = 3
 [[galleries]]
 id = "svr"
 name = "서버"
+# 미니갤이라면 mini = true
 delay = 60.0
 fetch_delay = 1.5
 pages = 1
