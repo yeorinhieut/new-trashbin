@@ -54,6 +54,7 @@ class StatusResponse(BaseModel):
     last_error: Optional[str]
     queue_size: int
     queue: list[QueueItemResponse]
+    mini: bool
     delay: float
     fetch_delay: float
     pages: int
@@ -282,6 +283,16 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=404, detail="Gallery not found")
         await archiver.stop()
         return {"status": "stopped"}
+
+    @app.delete("/api/galleries/{gallery_id}")
+    async def delete_gallery(
+        gallery_id: str, manager: ArchiveManager = Depends(get_manager)
+    ) -> dict[str, bool]:
+        try:
+            await manager.delete_gallery(gallery_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="Gallery not found") from exc
+        return {"ok": True}
 
     @app.get("/api/galleries/{gallery_id}/posts", response_model=PageResponse)
     async def list_posts(
@@ -550,6 +561,7 @@ def _status_to_response(status: GalleryStatus) -> StatusResponse:
         last_error=status.last_error,
         queue_size=status.queue_size,
         queue=queue_items,
+        mini=status.mini,
         delay=status.delay,
         fetch_delay=status.fetch_delay,
         pages=status.pages,

@@ -309,6 +309,18 @@ class QueueDatabase:
                 (gallery_id, post_id),
             )
 
+    async def delete_for_gallery(self, gallery_id: str) -> None:
+        """Remove all queue entries for a gallery (both due and scheduled)."""
+        async with self._lock:
+            await asyncio.to_thread(self._delete_rows_for_gallery, gallery_id)
+
+    def _delete_rows_for_gallery(self, gallery_id: str) -> None:
+        with self._conn:
+            self._conn.execute(
+                "DELETE FROM queue_items WHERE gallery_id = ?",
+                (gallery_id,),
+            )
+
     async def count_due(self, gallery_id: str) -> int:
         now = time.time()
         async with self._lock:
@@ -491,4 +503,3 @@ class QueueDatabase:
         for row in cursor.fetchall():
             counts[str(row["post_id"])] = int(row["cnt"])
         return counts
-

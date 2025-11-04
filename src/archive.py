@@ -171,6 +171,14 @@ class ArchiveConfig:
         self.save()
         return settings
 
+    def remove_gallery(self, gallery_id: str) -> None:
+        """Remove a gallery from config without touching its DB file."""
+        before = len(self.model.galleries)
+        self.model.galleries = [g for g in self.model.galleries if g.id != gallery_id]
+        if len(self.model.galleries) == before:
+            raise KeyError(f"Gallery {gallery_id} not found")
+        self.save()
+
 
 @dataclass
 class ArchiveEvent:
@@ -190,6 +198,7 @@ class GalleryStatus:
     last_error: Optional[str]
     queue_size: int
     queue: List[QueueEntry]
+    mini: bool
     delay: float
     fetch_delay: float
     pages: int
@@ -1070,6 +1079,7 @@ class ArchiveManager:
             last_error=archiver.last_error,
             queue_size=queue_size,
             queue=queue_preview,
+            mini=settings.mini,
             delay=settings.delay,
             fetch_delay=settings.fetch_delay,
             pages=settings.pages,
@@ -1099,6 +1109,7 @@ class ArchiveManager:
                     last_error=archiver.last_error,
                     queue_size=queue_size,
                     queue=queue_preview,
+                    mini=settings.mini,
                     delay=settings.delay,
                     fetch_delay=settings.fetch_delay,
                     pages=settings.pages,
@@ -1163,6 +1174,23 @@ class ArchiveManager:
             archiver = self._create_archiver(updated)
             self._galleries[gallery_id] = archiver
         return await self.get_status(gallery_id)
+
+    async def delete_gallery(self, gallery_id: str) -> None:
+        """Stop and remove a gallery; clear its queue; keep DB file intact."""
+        archiver = self._galleries.get(gallery_id)
+        if archiver:
+            await archiver.stop()
+        # Clear queue entries for the gallery
+        await self.queue.delete_for_gallery(gallery_id)
+        # Drop from running registry
+        if gallery_id in self._galleries:
+            self._galleries.pop(gallery_id, None)
+        # Remove from config
+        try:
+            self.config.remove_gallery(gallery_id)
+        except KeyError:
+            # Config already missing; ignore
+            pass
 
     async def search_posts(self, gallery_id: str, query: str, *, limit: int = 25) -> List[dict]:
         archiver = self._galleries.get(gallery_id)

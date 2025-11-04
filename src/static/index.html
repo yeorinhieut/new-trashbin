@@ -197,7 +197,10 @@
 
           <div class="grid gap-5 sm:grid-cols-2">
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">갤러리 ID<span class="text-rose-300">*</span></span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">갤러리 ID<span class="text-rose-300">*</span>
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">DCInside 갤러리 식별자 (예: vtubersnipe).</div>
               <input
                 type="text"
                 name="id"
@@ -207,7 +210,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">표시 이름</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">표시 이름
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">대시보드에 표시할 별칭입니다. 비워두면 갤러리 ID만 사용합니다.</div>
               <input
                 type="text"
                 name="name"
@@ -216,7 +222,20 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">수집 주기(초)</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">미니 갤러리
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">미니 갤러리이면 체크하세요. 수집 경로가 /mini/{id}로 설정됩니다.</div>
+              <div class="flex items-center gap-2">
+                <input type="checkbox" name="mini" class="h-4 w-4 rounded border-dashboard-border/60 bg-slate-900/60 text-emerald-400 focus:ring-emerald-400" />
+                <span class="text-slate-300 text-xs">체크 시 미니 갤러리 사용</span>
+              </div>
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200 flex items-center gap-2">수집 주기(초)
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">목록을 다시 확인하는 간격입니다. 너무 짧으면 차단될 수 있습니다.</div>
               <input
                 type="number"
                 name="delay"
@@ -227,7 +246,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">목록 페이지 수</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">목록 페이지 수
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">첫 N페이지까지 추적합니다. 클수록 과금/부하 증가.</div>
               <input
                 type="number"
                 name="pages"
@@ -238,7 +260,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">요청 간 지연(초)</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">요청 간 지연(초)
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">각 네트워크 요청 사이에 기다리는 시간입니다.</div>
               <input
                 type="number"
                 name="fetch_delay"
@@ -249,7 +274,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">후속 확인 주기(초, 콤마 구분)</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">후속 확인 주기(초, 콤마 구분)
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">신규 글의 추후 변화를 재확인할 지연(초) 목록입니다.</div>
               <input
                 type="text"
                 name="followup_delays"
@@ -258,7 +286,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">댓글 페이지 수</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">댓글 페이지 수
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">댓글을 최대 몇 페이지까지 가져올지 설정합니다.</div>
               <input
                 type="number"
                 name="max_comment_pages"
@@ -268,7 +299,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">댓글 페이지 크기</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">댓글 페이지 크기
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">댓글 페이지 당 항목 수입니다.</div>
               <input
                 type="number"
                 name="comment_page_size"
@@ -278,7 +312,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">댓글 지연(초)</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">댓글 지연(초)
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">댓글 페이지 요청 사이의 지연입니다.</div>
               <input
                 type="number"
                 name="comment_delay"
@@ -289,7 +326,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">댓글 재확인 간격(초)</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">댓글 재확인 간격(초)
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">최근 댓글이 있을 때 다음 재확인까지의 대기 시간입니다.</div>
               <input
                 type="number"
                 name="comment_followup_delay"
@@ -299,7 +339,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">최근 댓글 기준(초)</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">최근 댓글 기준(초)
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">가장 최근 댓글과 현재의 차이가 이 값 이하이면 재확인을 예약합니다.</div>
               <input
                 type="number"
                 name="comment_followup_threshold"
@@ -309,7 +352,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">추가 재확인 횟수</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">추가 재확인 횟수
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">댓글 재확인을 추가로 몇 번 더 시도할지 정합니다.</div>
               <input
                 type="number"
                 name="comment_followup_max_retries"
@@ -319,7 +365,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">자동 시작</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">자동 시작
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">서버 시작 시 해당 갤러리를 자동으로 수집 시작합니다.</div>
               <select
                 name="auto_start"
                 class="w-full rounded-xl border border-dashboard-border/60 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 focus:border-dashboard-accent focus:outline-none focus:ring-2 focus:ring-dashboard-accent/40"
@@ -388,7 +437,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">표시 이름</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">표시 이름
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">대시보드에 표시할 별칭입니다.</div>
               <input
                 type="text"
                 name="name"
@@ -396,7 +448,20 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">수집 주기(초)</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">미니 갤러리
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">미니 갤러리 여부입니다. 변경 시 이후 요청에 적용됩니다.</div>
+              <div class="flex items-center gap-2">
+                <input type="checkbox" name="mini" class="h-4 w-4 rounded border-dashboard-border/60 bg-slate-900/60 text-emerald-400 focus:ring-emerald-400" />
+                <span class="text-slate-300 text-xs">체크 시 미니 갤러리 사용</span>
+              </div>
+            </label>
+            <label class="flex flex-col gap-2 text-sm">
+              <span class="font-medium text-slate-200 flex items-center gap-2">수집 주기(초)
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">목록을 다시 확인하는 간격입니다.</div>
               <input
                 type="number"
                 name="delay"
@@ -406,7 +471,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">목록 페이지 수</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">목록 페이지 수
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">첫 N페이지까지 추적합니다.</div>
               <input
                 type="number"
                 name="pages"
@@ -416,7 +484,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">요청 간 지연(초)</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">요청 간 지연(초)
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">각 네트워크 요청 사이 대기 시간입니다.</div>
               <input
                 type="number"
                 name="fetch_delay"
@@ -426,7 +497,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">후속 확인 주기(초, 콤마 구분)</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">후속 확인 주기(초, 콤마 구분)
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">신규 글의 변화를 추적하기 위한 재확인 지연(초) 목록입니다.</div>
               <input
                 type="text"
                 name="followup_delays"
@@ -434,7 +508,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">댓글 페이지 수</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">댓글 페이지 수
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">댓글을 최대 몇 페이지까지 가져올지 설정합니다.</div>
               <input
                 type="number"
                 name="max_comment_pages"
@@ -443,7 +520,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">댓글 페이지 크기</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">댓글 페이지 크기
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">댓글 페이지 당 항목 수입니다.</div>
               <input
                 type="number"
                 name="comment_page_size"
@@ -452,7 +532,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">댓글 지연(초)</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">댓글 지연(초)
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">댓글 페이지 요청 간 지연입니다.</div>
               <input
                 type="number"
                 name="comment_delay"
@@ -462,7 +545,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">댓글 재확인 간격(초)</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">댓글 재확인 간격(초)
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">최근 댓글이 있을 때 다음 재확인까지의 대기 시간입니다.</div>
               <input
                 type="number"
                 name="comment_followup_delay"
@@ -471,7 +557,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">최근 댓글 기준(초)</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">최근 댓글 기준(초)
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">가장 최근 댓글과 현재의 차이가 이 값 이하이면 재확인을 예약합니다.</div>
               <input
                 type="number"
                 name="comment_followup_threshold"
@@ -480,7 +569,10 @@
               />
             </label>
             <label class="flex flex-col gap-2 text-sm">
-              <span class="font-medium text-slate-200">추가 재확인 횟수</span>
+              <span class="font-medium text-slate-200 flex items-center gap-2">추가 재확인 횟수
+                <button type="button" data-help-toggle class="text-xs text-slate-300/80 hover:text-slate-100">더보기</button>
+              </span>
+              <div class="help-tip hidden rounded-lg border border-dashboard-border/60 bg-slate-900/80 p-2 text-xs text-slate-300">댓글 재확인을 추가로 몇 번 더 시도할지 정합니다.</div>
               <input
                 type="number"
                 name="comment_followup_max_retries"
@@ -747,6 +839,10 @@
         setInputValue("input[name='id']", status.gallery_id ?? "");
         setInputValue("input[name='name']", status.name ?? "");
         setInputValue("input[name='delay']", status.delay ?? "");
+        const miniInput = editGalleryForm.querySelector("input[name='mini']");
+        if (miniInput instanceof HTMLInputElement) {
+          miniInput.checked = Boolean(status.mini);
+        }
         setInputValue("input[name='fetch_delay']", status.fetch_delay ?? "");
         setInputValue("input[name='pages']", status.pages ?? "");
         const followups = Array.isArray(status.followup_delays)
@@ -778,6 +874,18 @@
           nameInput.focus();
         }
       }
+
+      // 간단한 도움말 토글: 레이블 안의 [data-help-toggle] 클릭 시 같은 레이블의 .help-tip 표시/숨김
+      document.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        if (!target.matches('[data-help-toggle]')) return;
+        const label = target.closest('label');
+        if (!label) return;
+        const tip = label.querySelector('.help-tip');
+        if (!(tip instanceof HTMLElement)) return;
+        tip.classList.toggle('hidden');
+      });
 
       function closeEditGalleryModal() {
         if (!editGalleryModal || !editGalleryForm) return;
@@ -953,6 +1061,7 @@
           const payload = {
             id,
             name: String(formData.get("name") ?? "").trim() || null,
+            mini: formData.get("mini") === "on",
             delay: Math.max(1, parseNumber(formData.get("delay"), 30)),
             fetch_delay: Math.max(0, parseNumber(formData.get("fetch_delay"), 1)),
             pages: Math.max(1, Math.min(10, Math.trunc(parseNumber(formData.get("pages"), 1)))),
@@ -1036,6 +1145,7 @@
 
           const payload = {
             name: String(formData.get("name") ?? "").trim() || null,
+            mini: formData.get("mini") === "on",
             delay: Math.max(1, parseNumber(formData.get("delay"), currentStatus.delay ?? 30)),
             fetch_delay: Math.max(
               0,
@@ -1377,6 +1487,7 @@
                 <button data-action="edit-config" data-gallery="${status.gallery_id}" class="inline-flex items-center justify-center rounded-xl border border-dashboard-border/60 bg-dashboard-surface/60 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:border-dashboard-accent hover:text-dashboard-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">설정</button>
                 <button data-action="start" data-gallery="${status.gallery_id}" class="inline-flex items-center justify-center rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-400/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">시작</button>
                 <button data-action="stop" data-gallery="${status.gallery_id}" class="inline-flex items-center justify-center rounded-xl border border-rose-400/40 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-200 transition hover:bg-rose-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">중지</button>
+                <button data-action="delete" data-gallery="${status.gallery_id}" class="inline-flex items-center justify-center rounded-xl border border-rose-400/60 bg-rose-600/10 px-3 py-1.5 text-xs font-semibold text-rose-200 transition hover:bg-rose-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">삭제</button>
               </div>
             </td>
           `;
@@ -1517,6 +1628,25 @@
           const status = latestStatusMap.get(gallery);
           if (status) {
             openEditGalleryModal(status);
+          }
+          return;
+        }
+        if (action === "delete") {
+          if (!confirm(`${gallery} 갤러리를 삭제할까요?\nDB 파일은 유지되고, 수집 작업/큐만 삭제됩니다.`)) {
+            return;
+          }
+          try {
+            button.disabled = true;
+            button.classList.add("opacity-60", "cursor-not-allowed");
+            const res = await fetch(`/api/galleries/${gallery}`, { method: "DELETE" });
+            if (!res.ok) throw new Error(`API ${res.status}`);
+            await fetchStatus();
+          } catch (error) {
+            console.error("Failed to delete gallery", error);
+            alert("갤러리 삭제에 실패했습니다.");
+          } finally {
+            button.disabled = false;
+            button.classList.remove("opacity-60", "cursor-not-allowed");
           }
           return;
         }
